@@ -1,0 +1,18 @@
+[project]
+name = "comfyui-moss-qwenvl-layout"
+description = "Use Qwen3-VL / Qwen3.5-VL to detect objects and text in an image and build a MOSS-Image layout JSON prompt, with an optional change-request box for edits."
+version = "1.0.0"
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["transformers>=4.57.0", "accelerate", "pillow"]
+
+[project.urls]
+Repository = "https://github.com/leroy989/ComfyUI-MOSS-QwenVL-Layout"
+Issues = "https://github.com/leroy989/ComfyUI-MOSS-QwenVL-Layout/issues"
+
+[tool.comfy]
+# PublisherId must match the publisher you create at https://registry.comfy.org
+PublisherId = "leroy989"
+DisplayName = "MOSS Layout from Qwen-VL"
+Icon = ""

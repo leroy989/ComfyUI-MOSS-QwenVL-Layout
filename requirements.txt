@@ -1,0 +1,4 @@
+# Only needed for the standalone (no CLIP connected) path.
+transformers>=4.57.0
+accelerate
+pillow
