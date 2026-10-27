@@ -46,6 +46,8 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 | `clip` *(optional)* | Qwen VL text encoder |
 | `hf_model`, `keep_loaded` *(optional)* | Standalone Hugging Face path |
 | `change_request` *(optional)* | Edits to apply, one per line |
+| `smart_mode` *(optional)* | Qwen picks the targets itself: people and their body parts, clothing, objects, background regions. Anything in `targets` is still included |
+| `max_items` *(optional)* | Smart mode only: cap on the number of regions (default 40) |
 | `box_padding` *(optional)* | Grow every box by this % per side (0 = off), on top of Qwen's own estimate of hidden parts |
 
 ### Outputs
@@ -62,6 +64,14 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 - Describe replacements in concrete visual terms: "elderly woman, grey wool coat, short white hair" works better than "a different person".
 - Boxes follow the reference image. For objects you add, Qwen guesses the position, so adjust the `bbox` values by hand if needed.
 - Global changes ("golden hour lighting", "winter") are applied to the overall caption and affected items.
+
+## Text handling
+
+Text is **off unless you ask for it**. If your `targets` or `change_request` don't mention text (words like `text`, `title`, `lettering`, `slogan`, or a quoted string), Qwen is never told text exists, any text items it returns are dropped, and quoted words are stripped from captions. To include text, say so, for example `title text EXPLORE` or `change the sign text to "OPEN"`.
+
+## Smart mode
+
+Turn on `smart_mode` to let Qwen decide what to target: each person plus their head, hair, torso, arms, hands, legs, feet and clothing, every distinct object, and the main background regions. Use `max_items` to cap the count, and keep entries in `targets` for anything you want guaranteed.
 
 ## Detail and occluded parts
 

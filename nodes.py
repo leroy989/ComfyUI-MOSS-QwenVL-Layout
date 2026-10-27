@@ -53,8 +53,51 @@ def _extract_json(text: str):
     return None
 
 
-def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta):
-    target_lines = "\n".join(f"- {t}" for t in targets) if targets else "- (none specified)"
+_TEXT_WORDS = re.compile(
+    r"\b(text|texts|title|titles|word|words|wording|letter|letters|lettering|writing|written|"
+    r"typography|font|slogan|headline|subtitle|inscription|handwritten|says|reads)\b|文字|文本|标题",
+    re.I,
+)
+_QUOTED = re.compile(
+    r'(?:\s*\b(?:reading|reads|saying|says|labeled|labelled|titled|that say|that reads|'
+    r'with the (?:text|words|word|letters)|the (?:text|words|word))\s*)?'
+    r'\s*["“”«»„][^"“”«»„]*["“”«»„]', re.I)
+_DANGLING = re.compile(
+    r"\b(?:reading|reads|saying|says|labeled|labelled|titled|that say|that reads|"
+    r"with the (?:text|words|word|letters))\s*(?=[,.;:)]|$)", re.I)
+
+
+def _wants_text(*parts):
+    """Text is only in scope when the user's own targets/changes ask for it."""
+    joined = "\n".join(p for p in parts if p)
+    return bool(_TEXT_WORDS.search(joined) or re.search(r'["“”«»„]', joined))
+
+
+def _strip_text_mentions(s):
+    s = _QUOTED.sub("", s)
+    s = _DANGLING.sub("", s)
+    s = re.sub(r"\s+([,.;:])", r"\1", s)
+    s = re.sub(r",\s*(?=[.;])", "", s)
+    return re.sub(r"\s{2,}", " ", s).strip()
+
+
+def _targets_block(targets, smart_mode, max_items):
+    extra = "\n".join(f"- {t}" for t in targets)
+    if not smart_mode:
+        return "Find ALL instances of these targets in the image:\n" + (extra or "- (none specified)")
+    block = f"""SMART MODE: decide for yourself what to detect. Study the whole image and list every visible element that helps recreate its layout as faithfully as possible, up to {max_items} items:
+- Each person or animal: one item for the whole subject, then separate items for their visible (or clearly implied but hidden) parts: head/face, hair, torso, each arm, each hand, each leg, each foot, and notable clothing and accessories (top, jacket, dress, trousers, shoes, hat, glasses, jewelry, bag).
+- Every distinct object, piece of furniture, vehicle, food item, plant, prop and handheld item.
+- The main background and scene regions (sky, ground or floor, walls, water, buildings, mountains, foliage, windows, doors).
+- Together the items should account for most of the canvas so nothing important is left unlisted. Skip tiny or insignificant details.
+- If you must cut items to fit the limit, keep the larger and more important ones."""
+    if extra:
+        block += "\nAlso make sure these specific targets are included:\n" + extra
+    return block
+
+
+def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta,
+                       smart_mode=False, max_items=40, text_ok=False):
     if coord_mode == "normalized_0_1000":
         coord_rule = (
             "bbox_2d must be [x1, y1, x2, y2] in normalized 0-1000 coordinates relative to the "
@@ -65,12 +108,29 @@ def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta):
             f"bbox_2d must be [x1, y1, x2, y2] in absolute pixels of the input image "
             f"(which is {iw}x{ih}), origin at top-left."
         )
-    text_rule = (
-        'Use label "text" ONLY for a target or requested change that is explicitly about text '
-        '(a title, sign, caption, a specific word, etc.). Do NOT create items for any other text '
-        "visible in the image (signs, logos, labels, watermarks, UI, background writing); ignore it "
-        "completely unless the user asked for it."
-    )
+
+    # Text handling: the schema, rules and change instructions only mention text when the
+    # user asked for it, so the model is never primed with the idea.
+    if text_ok:
+        text_rule = (
+            'Use label "text" ONLY for targets or requested changes that are explicitly about text. '
+            "Ignore every other piece of writing in the image."
+        )
+        label_line = '"label": "object", or "text" for a text element,'
+        text_field = '      "text": "exact visible text, only for label text, copied character for character",\n'
+        text_lang_rule = '- Keep "text" in its original language, unmodified.\n'
+        text_change_line = '- If a change edits text, put the NEW text in "text".\n'
+    else:
+        text_rule = (
+            "Writing on signs, labels, logos, clothing, packaging, screens, posters and watermarks is not "
+            "part of the layout: create no items for it, do not read it, and never quote or mention "
+            "any written words in any caption. Describe such surfaces only by shape, color and material."
+        )
+        label_line = '"label": "object",'
+        text_field = ""
+        text_lang_rule = ""
+        text_change_line = ""
+
     meta_tags = ", ".join(m.strip() for m in meta.split(",") if m.strip())
     if meta_tags:
         style_rule = (
@@ -83,6 +143,7 @@ def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta):
             "- Never name, describe or infer an art style or medium (photo, anime, painting, 3D render, etc.) "
             "in ANY caption. Describe only content, composition, colors and lighting."
         )
+
     if changes.strip():
         change_block = f"""
 REQUESTED CHANGES (the final image must reflect these):
@@ -94,17 +155,19 @@ How to apply the changes:
 - If a change replaces a person or object, keep its box and fully describe the replacement (appearance, clothing, pose, colors).
 - If a change adds something not in the image, add a new item with a sensible bbox for where it belongs.
 - If a change removes something, leave that item out entirely.
-- If a change edits text, put the NEW text in "text".
-- If a change is global (lighting, season, time of day), reflect it in the overall caption and in every affected item caption.
+{text_change_line}- If a change is global (lighting, season, time of day), reflect it in the overall caption and in every affected item caption.
 - Elements not touched by the changes are described as they appear.
 """
     else:
         change_block = ""
+
+    smart_rule = ("- Order items: whole subjects first, then their parts and clothing, then objects, then background regions.\n"
+                  if smart_mode else "- Order items from most to least prominent.\n")
+
     return f"""You are a precise object detector and layout planner.
 The final composition is a {W}x{H} canvas (width {W}, height {H}); the input image is the layout reference.
 {change_block}
-Find ALL instances of these targets in the image:
-{target_lines}
+{_targets_block(targets, smart_mode, max_items)}
 
 {text_rule}
 
@@ -113,10 +176,9 @@ Return exactly one JSON object and nothing else:
   "caption": "one or two sentences describing the overall scene, composition, colors and lighting (no art style or medium)",
   "items": [
     {{
-      "label": "object", or "text" only if the target/change is about text,
+      {label_line}
       "caption": "detailed description of this element: 2-4 sentences covering appearance, colors, materials, clothing, pose or orientation, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
-      "text": "exact visible text, ONLY for label text, copied character for character",
-      "bbox_2d": [x1, y1, x2, y2]
+{text_field}      "bbox_2d": [x1, y1, x2, y2]
     }}
   ]
 }}
@@ -127,10 +189,9 @@ Rules:
 - Captions must be specific and detailed. Always state spatial relationships and occlusion explicitly, for example "her left hand is hidden behind the man's shoulder" or "only the top half of the vase is visible above the counter". For people include clothing, hair, expression, pose, facing direction and where hands and feet are. For objects include material, color, shape, size and state.
 - Do not invent elements that are not visible.
 - One item per instance (two people = two items).
-- Write captions in English. Keep "text" in its original language, unmodified.
-{style_rule}
-- Order items from most to least prominent.
-- Output JSON only, no Markdown, no explanation."""
+- Write captions in English.
+{text_lang_rule}{style_rule}
+{smart_rule}- Output JSON only, no Markdown, no explanation."""
 
 
 def _to_moss_bbox(bb, W, H, iw, ih, coord_mode, pad_pct=0.0):
@@ -247,9 +308,9 @@ class MOSSLayoutFromQwenVL:
                                   "tooltip": "Target MOSS canvas width. 0 = use the image's width (rounded to 16)."}),
                 "height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
                                    "tooltip": "Target MOSS canvas height. 0 = use the image's height (rounded to 16)."}),
-                "targets": ("STRING", {"multiline": True, "default": "person\ncar\nsign",
-                                       "tooltip": "One thing to detect per line. For text, say so explicitly, e.g. 'title text EXPLORE' or 'the sign text'. Text is only detected when you ask for it."}),
-                "meta": ("STRING", {"default": "poster",
+                "targets": ("STRING", {"multiline": True, "default": "person",
+                                       "tooltip": "One thing to detect per line. Ignored/optional extras when smart_mode is on. For text, say so explicitly, e.g. 'title text EXPLORE'. Text is only handled when you ask for it."}),
+                "meta": ("STRING", {"default": "photo",
                                     "tooltip": "Comma-separated style/meta tags for summary.meta, e.g. photo, poster. Qwen is told NOT to describe style in captions, so style comes only from here."}),
                 "coord_mode": (["normalized_0_1000", "absolute_pixels"],
                                {"default": "normalized_0_1000",
@@ -268,6 +329,10 @@ class MOSSLayoutFromQwenVL:
                                               "tooltip": "Describe edits to make, one per line. E.g. 'make the dress red', 'replace the man with an elderly woman in a grey coat', 'add a dog on the left', 'change the sign text to OPEN'. Leave empty to just describe the image."}),
                 "box_padding": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 25.0, "step": 0.5,
                                           "tooltip": "Grow every box by this % of its size on each side (clamped to the canvas). Extra safety on top of Qwen estimating hidden/occluded parts."}),
+                "smart_mode": ("BOOLEAN", {"default": False,
+                                           "tooltip": "Qwen decides what to detect by itself: people and their body parts, clothing, objects and background regions, to match the reference layout as closely as possible. Anything in targets is still included."}),
+                "max_items": ("INT", {"default": 40, "min": 5, "max": 120, "step": 1,
+                                      "tooltip": "Smart mode only: maximum number of regions Qwen may return."}),
             },
         }
 
@@ -278,15 +343,16 @@ class MOSSLayoutFromQwenVL:
 
     def run(self, image, width, height, targets, meta, coord_mode,
             max_new_tokens, temperature, seed, clip=None, hf_model="", keep_loaded=False,
-            change_request="", box_padding=0.0):
+            change_request="", box_padding=0.0, smart_mode=False, max_items=40):
         pil = _tensor_to_pil(image)
         iw, ih = pil.size
         W = _round16(width if width > 0 else iw)
         H = _round16(height if height > 0 else ih)
 
         target_list = [t.strip() for t in targets.splitlines() if t.strip()]
+        text_ok = _wants_text(targets, change_request)
         prompt = _build_qwen_prompt(target_list, W, H, iw, ih, coord_mode,
-                                    change_request, meta)
+                                    change_request, meta, smart_mode, max_items, text_ok)
 
         if clip is not None:
             raw = _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed)
@@ -311,7 +377,12 @@ class MOSSLayoutFromQwenVL:
             if moss_bb is None:
                 continue
             label = "text" if str(it.get("label", "object")).lower() == "text" else "object"
-            entry = {"label": label, "caption": str(it.get("caption", "")).strip()}
+            if label == "text" and not text_ok:
+                continue  # text was never requested: drop it even if the model added it
+            cap = str(it.get("caption", "")).strip()
+            if not text_ok:
+                cap = _strip_text_mentions(cap)
+            entry = {"label": label, "caption": cap}
             if label == "text":
                 entry["text"] = str(it.get("text", ""))
             entry["bbox"] = moss_bb
@@ -321,7 +392,8 @@ class MOSSLayoutFromQwenVL:
             "summary": {
                 "meta": [m.strip() for m in meta.split(",") if m.strip()],
                 "canvas": "single",
-                "caption": str(data.get("caption", "")).strip(),
+                "caption": (_strip_text_mentions(str(data.get("caption", "")))
+                            if not text_ok else str(data.get("caption", "")).strip()),
             },
             "items": items_out,
             "bbox_coord_space": "abs_centralized",
