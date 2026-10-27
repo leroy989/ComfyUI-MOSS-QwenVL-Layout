@@ -14,7 +14,7 @@ import re
 
 import numpy as np
 import torch
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 try:
     import comfy.model_management as mm
@@ -298,6 +298,51 @@ def _generate_with_hf(model_id, pil, prompt, max_new_tokens, temperature, seed, 
 # Node
 # --------------------------------------------------------------------------
 
+# Bright, well-separated colors. Each box gets a black under-stroke, so they read on any image.
+_PALETTE = [
+    (255, 64, 64), (255, 196, 0), (0, 230, 118), (0, 200, 255), (255, 0, 200),
+    (255, 128, 0), (160, 255, 0), (140, 120, 255), (0, 255, 220), (255, 120, 170),
+]
+
+
+def _get_font(size):
+    for name in ("arialbd.ttf", "arial.ttf", "DejaVuSans-Bold.ttf", "DejaVuSans.ttf"):
+        try:
+            return ImageFont.truetype(name, size)
+        except Exception:
+            continue
+    try:
+        return ImageFont.load_default(size=size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def _draw_preview(base, items, W, H):
+    d = ImageDraw.Draw(base)
+    short = min(W, H)
+    lw = max(3, short // 250)
+    font = _get_font(max(16, short // 40))
+    for i, it in enumerate(items):
+        ymin, xmin, ymax, xmax = it["bbox"]
+        x1, y1, x2, y2 = xmin + W / 2, ymin + H / 2, xmax + W / 2, ymax + H / 2
+        color = _PALETTE[i % len(_PALETTE)]
+        d.rectangle([x1, y1, x2, y2], outline=(0, 0, 0), width=lw + 3)   # dark under-stroke
+        d.rectangle([x1, y1, x2, y2], outline=color, width=lw)
+
+        raw_label = (it.get("text") or it.get("caption") or "").strip()
+        if len(raw_label) > 30:
+            raw_label = (raw_label[:30].rsplit(" ", 1)[0] or raw_label[:30]) + "…"
+        label = f"{i + 1} {raw_label}"
+        tb = d.textbbox((0, 0), label, font=font)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        pad = max(3, th // 5)
+        cw, ch = tw + 2 * pad, th + 2 * pad
+        cx = min(max(x1, 0), max(W - cw, 0))
+        cy = y1 - ch if y1 - ch >= 0 else y1          # above the box, or inside if no room
+        d.rectangle([cx, cy, cx + cw, cy + ch], fill=color, outline=(0, 0, 0), width=2)
+        d.text((cx + pad - tb[0], cy + pad - tb[1]), label, fill=(0, 0, 0), font=font)
+
+
 class MOSSLayoutFromQwenVL:
     @classmethod
     def INPUT_TYPES(cls):
@@ -403,13 +448,7 @@ class MOSSLayoutFromQwenVL:
 
         # Preview: draw the converted boxes back onto the canvas to sanity-check them.
         prev = pil.resize((W, H), Image.LANCZOS)
-        d = ImageDraw.Draw(prev)
-        for it in items_out:
-            ymin, xmin, ymax, xmax = it["bbox"]
-            box = [xmin + W / 2, ymin + H / 2, xmax + W / 2, ymax + H / 2]
-            color = (255, 80, 80) if it["label"] == "text" else (80, 200, 255)
-            d.rectangle(box, outline=color, width=max(2, W // 400))
-            d.text((box[0] + 4, box[1] + 2), it.get("text") or it["caption"][:24], fill=color)
+        _draw_preview(prev, items_out, W, H)
 
         return (out_prompt, _pil_to_tensor(prev), raw, W, H)
 
