@@ -1,7 +1,7 @@
 # ComfyUI-MOSS-QwenVL-Layout
 
 A ComfyUI node that turns a reference image into a **MOSS-Image layout prompt**.
-Qwen3-VL / Qwen3.5-VL looks at your image, finds the things you ask for (plus any visible text), and the node writes the layout JSON that MOSS-Image expects: captions, text content and bounding boxes converted to MOSS's `abs_centralized` / `yxyx` coordinate format.
+Qwen3-VL / Qwen3.5-VL looks at your image, finds the things you ask for (including text, if you ask), and the node writes the layout JSON that MOSS-Image expects: captions, text content and bounding boxes converted to MOSS's `abs_centralized` / `yxyx` coordinate format.
 
 You can also add **change requests** ("make the dress red", "replace the man with an elderly woman in a grey coat", "add a dog on the left"). The captions are then written to describe the *edited* result, so MOSS generates the changed version while keeping the original composition.
 
@@ -21,7 +21,7 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 
 1. Connect an `IMAGE`.
 2. Set `width` / `height` to your MOSS output size (0 = use the image's size). Values are rounded to multiples of 16, as MOSS requires.
-3. List what to detect in `targets`, one per line.
+3. List what to detect in `targets`, one per line. Text is only detected when you ask for it (for example `title text`, `the sign`).
 4. Optionally fill in `change_request`, one change per line.
 5. Connect the `prompt` output to your MOSS-Image text prompt.
 6. Use the `preview` output to check the boxes before generating.
@@ -40,8 +40,7 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 | `image` | Reference image |
 | `width`, `height` | Target MOSS canvas (0 = use image size), rounded to multiples of 16 |
 | `targets` | Things to detect, one per line |
-| `auto_detect_text` | Also detect visible text and capture it exactly |
-| `meta` | Comma-separated tags for `summary.meta` (e.g. `poster`, `photo`) |
+| `meta` | Comma-separated style/meta tags for `summary.meta` (e.g. `poster`, `photo`). This is the **only** place style comes from: Qwen is told not to describe art style or medium in any caption |
 | `coord_mode` | `normalized_0_1000` (Qwen3-VL / 3.5) or `absolute_pixels` (Qwen2.5-VL style) |
 | `max_new_tokens`, `temperature`, `seed` | Generation settings |
 | `clip` *(optional)* | Qwen VL text encoder |

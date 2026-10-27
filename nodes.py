@@ -53,7 +53,7 @@ def _extract_json(text: str):
     return None
 
 
-def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, auto_text, changes):
+def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta):
     target_lines = "\n".join(f"- {t}" for t in targets) if targets else "- (none specified)"
     if coord_mode == "normalized_0_1000":
         coord_rule = (
@@ -66,10 +66,23 @@ def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, auto_text, changes):
             f"(which is {iw}x{ih}), origin at top-left."
         )
     text_rule = (
-        "Also detect every clearly visible piece of text/typography as its own item with "
-        'label "text".' if auto_text else
-        'Only use label "text" if one of the targets is text.'
+        'Use label "text" ONLY for a target or requested change that is explicitly about text '
+        '(a title, sign, caption, a specific word, etc.). Do NOT create items for any other text '
+        "visible in the image (signs, logos, labels, watermarks, UI, background writing); ignore it "
+        "completely unless the user asked for it."
     )
+    meta_tags = ", ".join(m.strip() for m in meta.split(",") if m.strip())
+    if meta_tags:
+        style_rule = (
+            f'- Style is fixed by the meta tags: "{meta_tags}". Never name, describe or infer an art style or '
+            "medium (photo, photorealistic, anime, painting, 3D render, illustration, etc.) in ANY caption, "
+            "even if the reference image has one. Describe only content, composition, colors and lighting."
+        )
+    else:
+        style_rule = (
+            "- Never name, describe or infer an art style or medium (photo, anime, painting, 3D render, etc.) "
+            "in ANY caption. Describe only content, composition, colors and lighting."
+        )
     if changes.strip():
         change_block = f"""
 REQUESTED CHANGES (the final image must reflect these):
@@ -82,7 +95,7 @@ How to apply the changes:
 - If a change adds something not in the image, add a new item with a sensible bbox for where it belongs.
 - If a change removes something, leave that item out entirely.
 - If a change edits text, put the NEW text in "text".
-- If a change is global (lighting, season, art style, time of day), reflect it in the overall caption and in every affected item caption.
+- If a change is global (lighting, season, time of day), reflect it in the overall caption and in every affected item caption.
 - Elements not touched by the changes are described as they appear.
 """
     else:
@@ -97,10 +110,10 @@ Find ALL instances of these targets in the image:
 
 Return exactly one JSON object and nothing else:
 {{
-  "caption": "one or two sentences describing the overall scene, composition, colors, lighting and art style",
+  "caption": "one or two sentences describing the overall scene, composition, colors and lighting (no art style or medium)",
   "items": [
     {{
-      "label": "object" or "text",
+      "label": "object", or "text" only if the target/change is about text,
       "caption": "short visual description of this element (appearance, color, style, position)",
       "text": "exact visible text, ONLY for label text, copied character for character",
       "bbox_2d": [x1, y1, x2, y2]
@@ -113,6 +126,7 @@ Rules:
 - Boxes must tightly enclose the element. Do not invent elements that are not visible.
 - One item per instance (two people = two items).
 - Write captions in English. Keep "text" in its original language, unmodified.
+{style_rule}
 - Order items from most to least prominent.
 - Output JSON only, no Markdown, no explanation."""
 
@@ -228,10 +242,9 @@ class MOSSLayoutFromQwenVL:
                 "height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
                                    "tooltip": "Target MOSS canvas height. 0 = use the image's height (rounded to 16)."}),
                 "targets": ("STRING", {"multiline": True, "default": "person\ncar\nsign",
-                                       "tooltip": "One thing to detect per line."}),
-                "auto_detect_text": ("BOOLEAN", {"default": True}),
+                                       "tooltip": "One thing to detect per line. For text, say so explicitly, e.g. 'title text EXPLORE' or 'the sign text'. Text is only detected when you ask for it."}),
                 "meta": ("STRING", {"default": "poster",
-                                    "tooltip": "Comma-separated meta tags for summary.meta, e.g. photo, poster"}),
+                                    "tooltip": "Comma-separated style/meta tags for summary.meta, e.g. photo, poster. Qwen is told NOT to describe style in captions, so style comes only from here."}),
                 "coord_mode": (["normalized_0_1000", "absolute_pixels"],
                                {"default": "normalized_0_1000",
                                 "tooltip": "Qwen3-VL/3.5 use normalized 0-1000. Use absolute_pixels for Qwen2.5-VL style models."}),
@@ -255,7 +268,7 @@ class MOSSLayoutFromQwenVL:
     FUNCTION = "run"
     CATEGORY = "MOSS-Image"
 
-    def run(self, image, width, height, targets, auto_detect_text, meta, coord_mode,
+    def run(self, image, width, height, targets, meta, coord_mode,
             max_new_tokens, temperature, seed, clip=None, hf_model="", keep_loaded=False,
             change_request=""):
         pil = _tensor_to_pil(image)
@@ -265,7 +278,7 @@ class MOSSLayoutFromQwenVL:
 
         target_list = [t.strip() for t in targets.splitlines() if t.strip()]
         prompt = _build_qwen_prompt(target_list, W, H, iw, ih, coord_mode,
-                                    auto_detect_text, change_request)
+                                    change_request, meta)
 
         if clip is not None:
             raw = _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed)
