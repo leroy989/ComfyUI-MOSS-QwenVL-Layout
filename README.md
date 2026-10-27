@@ -5,6 +5,8 @@ Qwen3-VL / Qwen3.5-VL looks at your image, finds the things you ask for (includi
 
 You can also add **change requests** ("make the dress red", "replace the man with an elderly woman in a grey coat", "add a dog on the left"). The captions are then written to describe the *edited* result, so MOSS generates the changed version while keeping the original composition.
 
+<img width="3373" height="1205" alt="Screenshot 2026-10-27 145849" src="https://github.com/user-attachments/assets/9120a6eb-0ff7-4c3c-9d4f-5ef19cdc46e7" />
+
 > Unofficial community node. Not affiliated with the MOSS-Image team or Alibaba/Qwen.
 
 ## Install
