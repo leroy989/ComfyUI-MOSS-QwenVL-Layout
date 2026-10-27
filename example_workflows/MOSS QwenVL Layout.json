@@ -171,7 +171,6 @@
           ]
         }
       ],
-      "title": "MOSS",
       "properties": {
         "cnr_id": "comfy-core",
         "ver": "0.42.0",
@@ -299,7 +298,9 @@
         "Qwen/Qwen3-VL-8B-Instruct",
         false,
         "",
-        0
+        0,
+        false,
+        40
       ],
       "widgets_values_named": {
         "width": 0,
@@ -314,7 +315,9 @@
         "hf_model": "Qwen/Qwen3-VL-8B-Instruct",
         "keep_loaded": false,
         "change_request": "",
-        "box_padding": 0
+        "box_padding": 0,
+        "smart_mode": false,
+        "max_items": 40
       }
     },
     {
@@ -890,7 +893,7 @@
               106
             ],
             "flags": {},
-            "order": 7,
+            "order": 6,
             "mode": 0,
             "inputs": [
               {
@@ -997,7 +1000,7 @@
               106
             ],
             "flags": {},
-            "order": 1,
+            "order": 3,
             "mode": 0,
             "inputs": [
               {
@@ -1054,7 +1057,7 @@
               200
             ],
             "flags": {},
-            "order": 6,
+            "order": 5,
             "mode": 0,
             "inputs": [
               {
@@ -1086,10 +1089,10 @@
               }
             },
             "widgets_values": [
-              "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artefacts, 2d, cartoon, 3d, selfie, looking in camera"
+              "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artifacts"
             ],
             "widgets_values_named": {
-              "text": "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artefacts, 2d, cartoon, 3d, selfie, looking in camera"
+              "text": "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artifacts"
             }
           },
           {
@@ -1158,7 +1161,7 @@
               200
             ],
             "flags": {},
-            "order": 5,
+            "order": 4,
             "mode": 0,
             "inputs": [
               {
@@ -1372,7 +1375,7 @@
               82
             ],
             "flags": {},
-            "order": 3,
+            "order": 1,
             "mode": 0,
             "inputs": [],
             "outputs": [
@@ -1411,7 +1414,7 @@
               90.95488044877573
             ],
             "flags": {},
-            "order": 4,
+            "order": 7,
             "mode": 0,
             "inputs": [
               {
@@ -1638,8 +1641,8 @@
     "ds": {
       "scale": 1.0511824334504811,
       "offset": [
-        469.0743996620958,
-        -440.91176689958564
+        494.75976039569673,
+        -443.7656958699858
       ]
     },
     "frontendVersion": "1.57.1",
