@@ -114,7 +114,7 @@ Return exactly one JSON object and nothing else:
   "items": [
     {{
       "label": "object", or "text" only if the target/change is about text,
-      "caption": "short visual description of this element (appearance, color, style, position)",
+      "caption": "detailed description of this element: 2-4 sentences covering appearance, colors, materials, clothing, pose or orientation, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
       "text": "exact visible text, ONLY for label text, copied character for character",
       "bbox_2d": [x1, y1, x2, y2]
     }}
@@ -123,7 +123,9 @@ Return exactly one JSON object and nothing else:
 
 Rules:
 - {coord_rule}
-- Boxes must tightly enclose the element. Do not invent elements that are not visible.
+- Boxes cover the element's FULL estimated extent, not just the visible part. If part of it is hidden behind or inside something else (a hand or foot behind a person, an object partly inside a container, a person cropped by another object), extend the box to where the whole element would be, staying inside the image bounds. Overlapping or nested boxes are fine. Fully visible elements get a tight box.
+- Captions must be specific and detailed. Always state spatial relationships and occlusion explicitly, for example "her left hand is hidden behind the man's shoulder" or "only the top half of the vase is visible above the counter". For people include clothing, hair, expression, pose, facing direction and where hands and feet are. For objects include material, color, shape, size and state.
+- Do not invent elements that are not visible.
 - One item per instance (two people = two items).
 - Write captions in English. Keep "text" in its original language, unmodified.
 {style_rule}
@@ -131,7 +133,7 @@ Rules:
 - Output JSON only, no Markdown, no explanation."""
 
 
-def _to_moss_bbox(bb, W, H, iw, ih, coord_mode):
+def _to_moss_bbox(bb, W, H, iw, ih, coord_mode, pad_pct=0.0):
     """Qwen [x1,y1,x2,y2] -> MOSS [ymin,xmin,ymax,xmax] absolute, centred on canvas."""
     try:
         x1, y1, x2, y2 = [float(v) for v in bb[:4]]
@@ -145,6 +147,10 @@ def _to_moss_bbox(bb, W, H, iw, ih, coord_mode):
         y1, y2 = y1 / ih * H, y2 / ih * H
     x1, x2 = sorted((min(max(x1, 0), W), min(max(x2, 0), W)))
     y1, y2 = sorted((min(max(y1, 0), H), min(max(y2, 0), H)))
+    if pad_pct > 0:
+        px, py = (x2 - x1) * pad_pct / 100.0, (y2 - y1) * pad_pct / 100.0
+        x1, x2 = max(x1 - px, 0), min(x2 + px, W)
+        y1, y2 = max(y1 - py, 0), min(y2 + py, H)
     if (x2 - x1) < 2 or (y2 - y1) < 2:
         return None
     return [int(round(y1 - H / 2)), int(round(x1 - W / 2)),
@@ -248,7 +254,7 @@ class MOSSLayoutFromQwenVL:
                 "coord_mode": (["normalized_0_1000", "absolute_pixels"],
                                {"default": "normalized_0_1000",
                                 "tooltip": "Qwen3-VL/3.5 use normalized 0-1000. Use absolute_pixels for Qwen2.5-VL style models."}),
-                "max_new_tokens": ("INT", {"default": 2048, "min": 256, "max": 16384, "step": 64}),
+                "max_new_tokens": ("INT", {"default": 4096, "min": 256, "max": 16384, "step": 64}),
                 "temperature": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 2.0, "step": 0.05}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
             },
@@ -260,6 +266,8 @@ class MOSSLayoutFromQwenVL:
                                             "tooltip": "HF path only: keep Qwen in memory after running."}),
                 "change_request": ("STRING", {"multiline": True, "default": "",
                                               "tooltip": "Describe edits to make, one per line. E.g. 'make the dress red', 'replace the man with an elderly woman in a grey coat', 'add a dog on the left', 'change the sign text to OPEN'. Leave empty to just describe the image."}),
+                "box_padding": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 25.0, "step": 0.5,
+                                          "tooltip": "Grow every box by this % of its size on each side (clamped to the canvas). Extra safety on top of Qwen estimating hidden/occluded parts."}),
             },
         }
 
@@ -270,7 +278,7 @@ class MOSSLayoutFromQwenVL:
 
     def run(self, image, width, height, targets, meta, coord_mode,
             max_new_tokens, temperature, seed, clip=None, hf_model="", keep_loaded=False,
-            change_request=""):
+            change_request="", box_padding=0.0):
         pil = _tensor_to_pil(image)
         iw, ih = pil.size
         W = _round16(width if width > 0 else iw)
@@ -299,7 +307,7 @@ class MOSSLayoutFromQwenVL:
             if not isinstance(it, dict):
                 continue
             bb = it.get("bbox_2d") or it.get("bbox")
-            moss_bb = _to_moss_bbox(bb, W, H, iw, ih, coord_mode) if bb else None
+            moss_bb = _to_moss_bbox(bb, W, H, iw, ih, coord_mode, box_padding) if bb else None
             if moss_bb is None:
                 continue
             label = "text" if str(it.get("label", "object")).lower() == "text" else "object"

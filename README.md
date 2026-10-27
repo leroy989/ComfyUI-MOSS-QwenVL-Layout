@@ -46,6 +46,7 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 | `clip` *(optional)* | Qwen VL text encoder |
 | `hf_model`, `keep_loaded` *(optional)* | Standalone Hugging Face path |
 | `change_request` *(optional)* | Edits to apply, one per line |
+| `box_padding` *(optional)* | Grow every box by this % per side (0 = off), on top of Qwen's own estimate of hidden parts |
 
 ### Outputs
 
@@ -61,6 +62,10 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 - Describe replacements in concrete visual terms: "elderly woman, grey wool coat, short white hair" works better than "a different person".
 - Boxes follow the reference image. For objects you add, Qwen guesses the position, so adjust the `bbox` values by hand if needed.
 - Global changes ("golden hour lighting", "winter") are applied to the overall caption and affected items.
+
+## Detail and occluded parts
+
+Qwen is asked for detailed captions that state spatial relationships and occlusion explicitly (for example "left hand hidden behind the man's shoulder"). Boxes cover the element's **full estimated extent**, including parts hidden behind or inside other things, so a partly obscured object isn't cut short. If boxes are still tight, raise `box_padding` (2-5% is a good start) or add a note to `change_request`.
 
 ## How the coordinates work
 
