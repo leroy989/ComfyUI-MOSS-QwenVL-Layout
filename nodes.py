@@ -81,6 +81,165 @@ def _strip_text_mentions(s):
     return re.sub(r"\s{2,}", " ", s).strip()
 
 
+# --------------------------------------------------------------------------
+# Meta (style) lock
+#   * the meta tags are the single source of style
+#   * the overall caption must state them (added if Qwen forgot)
+#   * words from OTHER styles are stripped from every caption
+# --------------------------------------------------------------------------
+
+# "core": unambiguous style words, stripped from every caption.
+_STYLE_CORE = {
+    "photo": ["photorealistic", "photo-realistic", "hyperrealistic", "hyper-realistic", "photographic",
+              "dslr", "bokeh", "film grain", "35mm"],
+    "anime": ["anime", "manga", "cel-shaded", "cel shaded", "cel shading", "chibi"],
+    "cartoon": ["cartoon", "cartoonish"],
+    "illustration": ["line art", "lineart", "vector art", "flat design"],
+    "painting": ["watercolor", "watercolour", "impasto", "gouache", "brushstrokes", "brush strokes"],
+    "3d": ["3d render", "3d rendered", "cgi", "octane render", "unreal engine"],
+    "pixel": ["pixel art", "pixelated", "8-bit", "16-bit"],
+}
+# "extra": medium nouns that can also be real objects ("a photo frame"), so only the overall caption is checked.
+_STYLE_EXTRA = {
+    "photo": ["photograph", "photography", "photo", "realistic"],
+    "cartoon": ["comic book"],
+    "illustration": ["illustration", "illustrated", "sketch"],
+    "painting": ["painting", "oil painting"],
+    "3d": ["3d", "render", "rendered"],
+    "pixel": ["pixel"],
+}
+
+
+def _meta_tags(meta):
+    seen, tags = set(), []
+    for t in re.split(r"[,;]", meta or ""):
+        t = t.strip()
+        if t and t.lower() not in seen:
+            seen.add(t.lower())
+            tags.append(t)
+    return tags
+
+
+def _style_patterns(tags):
+    """(item_pattern, summary_pattern) matching words of every style NOT named in the meta."""
+    meta_lc = " ".join(tags).lower()
+
+    def named(word):
+        return re.search(rf"(?<![\w-]){re.escape(word)}(?![\w-])", meta_lc) is not None
+
+    allowed = set()
+    for cat in set(_STYLE_CORE) | set(_STYLE_EXTRA):
+        if named(cat) or any(named(w) for w in _STYLE_CORE.get(cat, []) + _STYLE_EXTRA.get(cat, [])):
+            allowed.add(cat)
+
+    def build(*tables):
+        words = sorted({w for tbl in tables for cat, ws in tbl.items() if cat not in allowed
+                        for w in ws if not named(w)}, key=len, reverse=True)
+        if not words:
+            return None
+        alt = "|".join(re.escape(w) for w in words)
+        return alt
+
+    item_alt, summ_alt = build(_STYLE_CORE), build(_STYLE_CORE, _STYLE_EXTRA)
+    return item_alt, summ_alt
+
+
+def _strip_style_words(text, alt):
+    """Remove words of non-meta styles. Returns (clean_text, [removed words])."""
+    if not alt or not text:
+        return text, []
+    word = re.compile(rf"(?<![\w-])(?:{alt})(?![\w-])", re.I)
+    found = [m.group(0).lower() for m in word.finditer(text)]
+    if not found:
+        return text, []
+    # "a close up photograph of X" -> "X"
+    text = re.sub(rf"(?<![\w-])(?:an?|the)\s+(?:[\w-]+\s+){{0,3}}?(?:{alt})\s+of\s+", "", text, flags=re.I)
+    # a style word used as a phrase ("with film grain", "in the style of a cartoon"): remove it with its connector
+    text = re.sub(
+        rf"(?:,\s*)?(?:\s+(?:in\s+(?:the\s+|an?\s+)?style\s+of|with|and|using|featuring|plus|in)\s+(?:an?\s+|the\s+)?)?"
+        rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic))?(?![\w-])"
+        rf"(?=\s*(?:[,.;:]|$)|\s+(?:and|with|in|behind|on|of|against|under|over|near)\b)",
+        "", text, flags=re.I)
+    # a style word used as an adjective ("photorealistic portrait", "anime-style eyes"): just drop it
+    text = re.sub(rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic))?(?![\w-])", "", text, flags=re.I)
+    text = re.sub(r"(?<![\w-])(?:in\s+(?:the\s+|an?\s+)?style\s+of|in\s+an?|an?|the)\s*(?=[,.;:]|$)", "", text, flags=re.I)
+    text = re.sub(r"\s+([,.;:])", r"\1", text)
+    text = re.sub(r"([,;])\s*(?=[,.;])", "", text)
+    text = re.sub(r"\s{2,}", " ", text).strip(" ,;")
+    if text and text[0].islower():
+        text = text[0].upper() + text[1:]
+    return text, found
+
+
+def _ensure_summary_style(summary, tags):
+    """Guarantee the overall caption states the locked style. Returns (caption, was_added)."""
+    if not tags:
+        return summary, False
+    low = summary.lower()
+    if any(t.lower() in low for t in tags):
+        return summary, False
+    return (f"Style: {', '.join(tags)}. {summary}").strip(), True
+
+
+# ---- Color lock (monochrome metas) and per-item style clause ----
+_MONO_RE = re.compile(
+    r"black[\s-]*(?:and|&|n)[\s-]*white|\bb\s*&\s*w\b|\bbw\b|monochrom|gr[ae]yscale|"
+    r"\bno\s+colou?rs?\b|colou?rless|without\s+colou?r|desaturat", re.I)
+_TONES = {
+    "light": ["yellow", "pink", "cyan", "lavender", "lime", "beige"],
+    "dark": ["purple", "violet", "indigo", "navy", "maroon", "burgundy", "crimson", "brown"],
+    "mid": ["red", "orange", "green", "blue", "teal", "turquoise", "magenta", "scarlet", "olive"],
+}
+_TONE_OF = {w: t for t, ws in _TONES.items() for w in ws}
+_COLOR_RE = re.compile(
+    r"(?<!\w)(?:(dark|deep|light|pale|pastel|bright|vivid|neon)\s+)?("
+    + "|".join(sorted(_TONE_OF, key=len, reverse=True)) + r")(?!\w)", re.I)
+_HYPE_RE = re.compile(
+    r"(?<!\w)(?:(?:brightly|vividly|vibrantly|richly|deeply)\s+colou?red|colou?rful|multi-?colou?red|"
+    r"vibrant|vivid|saturated)(?!\w)", re.I)
+
+
+def _is_mono(tags):
+    return bool(_MONO_RE.search(" ".join(tags)))
+
+
+def _tone_sub(m):
+    mod, col = (m.group(1) or "").lower(), m.group(2).lower()
+    if mod in ("dark", "deep"):
+        return "dark gray"
+    if mod:
+        return "light gray"
+    return {"light": "light gray", "dark": "dark gray", "mid": "mid-gray"}[_TONE_OF[col]]
+
+
+def _to_mono(text):
+    """Swap color words for gray tones so a no-color style is never contradicted. Returns (text, count)."""
+    if not text:
+        return text, 0
+    text, n1 = _COLOR_RE.subn(_tone_sub, text)
+    text, n2 = _HYPE_RE.subn("high-contrast", text)
+    text = re.sub(r"(gray)[\s-]colou?red", r"\1", text, flags=re.I)
+    return text, n1 + n2
+
+
+def _mentions_style(text, tags):
+    low = text.lower()
+    if any(t.lower() in low for t in tags):
+        return True
+    toks = {w for t in tags for w in re.findall(r"[a-z]+", t.lower()) if len(w) >= 6}
+    return any(re.search(rf"\b{w}", low) for w in toks)
+
+
+def _ensure_item_style(cap, tags):
+    """Guarantee an item caption carries the locked style. Returns (caption, was_added)."""
+    if not tags or _mentions_style(cap, tags):
+        return cap, False
+    cap = cap.rstrip()
+    if cap and cap[-1] not in ".!?":
+        cap += "."
+    return f"{cap} Rendered as {', '.join(tags)}.".strip(), True
+
+
 def _targets_block(targets, smart_mode, max_items):
     extra = "\n".join(f"- {t}" for t in targets)
     if not smart_mode:
@@ -97,7 +256,7 @@ def _targets_block(targets, smart_mode, max_items):
 
 
 def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta,
-                       smart_mode=False, max_items=40, text_ok=False):
+                       smart_mode=False, max_items=40, text_ok=False, style_in_items=True):
     if coord_mode == "normalized_0_1000":
         coord_rule = (
             "bbox_2d must be [x1, y1, x2, y2] in normalized 0-1000 coordinates relative to the "
@@ -131,18 +290,39 @@ def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta,
         text_lang_rule = ""
         text_change_line = ""
 
-    meta_tags = ", ".join(m.strip() for m in meta.split(",") if m.strip())
+    tag_list = _meta_tags(meta)
+    meta_tags = ", ".join(tag_list)
+    mono = _is_mono(tag_list)
+    color_word, color_one = ("tones", "tone") if mono else ("colors", "color")
     if meta_tags:
-        style_rule = (
-            f'- Style is fixed by the meta tags: "{meta_tags}". Never name, describe or infer an art style or '
-            "medium (photo, photorealistic, anime, painting, 3D render, illustration, etc.) in ANY caption, "
-            "even if the reference image has one. Describe only content, composition, colors and lighting."
+        item_style_rule = (
+            "  Every item caption must also include a short clause saying how that element is rendered in the locked "
+            'style, using the meta words (for example "drawn with fine pencil linework and shading" for a pencil '
+            "drawing). Never use words that belong to a different style.\n"
+            if style_in_items else
+            "  Item captions must not name any style or medium.\n"
         )
+        mono_rule = (
+            "  The locked style has NO color. Never use a color word (no green, red, orange, purple, blue, teal, brown, "
+            "etc.) in any caption, even if the reference image is colorful. Describe tone and value instead: black, "
+            "white, light gray, dark gray, shadowed, highlighted, high-contrast.\n"
+            if mono else ""
+        )
+        style_rule = (
+            f'- STYLE LOCK: the final image will be generated ONLY in this style: "{meta_tags}". The reference image is '
+            "a layout and content reference, nothing more: its own style, medium, rendering and colors do not carry over.\n"
+            "  Describe every element as it would look in the locked style, not as it looks in the reference.\n"
+            "  The overall caption must open with a phrase that uses these exact style words, then describe the scene.\n"
+            f"{item_style_rule}{mono_rule}"
+        ).rstrip("\n")
+        summary_hint = (f"one or two sentences describing the overall scene, composition, {color_word} and lighting, "
+                        "opening with the locked style words")
     else:
         style_rule = (
             "- Never name, describe or infer an art style or medium (photo, anime, painting, 3D render, etc.) "
             "in ANY caption. Describe only content, composition, colors and lighting."
         )
+        summary_hint = "one or two sentences describing the overall scene, composition, colors and lighting (no art style or medium)"
 
     if changes.strip():
         change_block = f"""
@@ -173,11 +353,11 @@ The final composition is a {W}x{H} canvas (width {W}, height {H}); the input ima
 
 Return exactly one JSON object and nothing else:
 {{
-  "caption": "one or two sentences describing the overall scene, composition, colors and lighting (no art style or medium)",
+  "caption": "{summary_hint}",
   "items": [
     {{
       {label_line}
-      "caption": "detailed description of this element: 2-4 sentences covering appearance, colors, materials, clothing, pose or orientation, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
+      "caption": "detailed description of this element: 2-4 sentences covering appearance, {color_word}, materials, clothing, pose or orientation, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
 {text_field}      "bbox_2d": [x1, y1, x2, y2]
     }}
   ]
@@ -186,7 +366,7 @@ Return exactly one JSON object and nothing else:
 Rules:
 - {coord_rule}
 - Boxes cover the element's FULL estimated extent, not just the visible part. If part of it is hidden behind or inside something else (a hand or foot behind a person, an object partly inside a container, a person cropped by another object), extend the box to where the whole element would be, staying inside the image bounds. Overlapping or nested boxes are fine. Fully visible elements get a tight box.
-- Captions must be specific and detailed. Always state spatial relationships and occlusion explicitly, for example "her left hand is hidden behind the man's shoulder" or "only the top half of the vase is visible above the counter". For people include clothing, hair, expression, pose, facing direction and where hands and feet are. For objects include material, color, shape, size and state.
+- Captions must be specific and detailed. Always state spatial relationships and occlusion explicitly, for example "her left hand is hidden behind the man's shoulder" or "only the top half of the vase is visible above the counter". For people include clothing, hair, expression, pose, facing direction and where hands and feet are. For objects include material, {color_one}, shape, size and state.
 - Do not invent elements that are not visible.
 - One item per instance (two people = two items).
 - Write captions in English.
@@ -356,7 +536,7 @@ class MOSSLayoutFromQwenVL:
                 "targets": ("STRING", {"multiline": True, "default": "person",
                                        "tooltip": "One thing to detect per line. Ignored/optional extras when smart_mode is on. For text, say so explicitly, e.g. 'title text EXPLORE'. Text is only handled when you ask for it."}),
                 "meta": ("STRING", {"default": "photo",
-                                    "tooltip": "Comma-separated style/meta tags for summary.meta, e.g. photo, poster. Qwen is told NOT to describe style in captions, so style comes only from here."}),
+                                    "tooltip": "Style lock. Comma-separated tags, e.g. photo, poster. The overall caption is built around them (added if Qwen forgets) and words from other styles are stripped from all captions."}),
                 "coord_mode": (["normalized_0_1000", "absolute_pixels"],
                                {"default": "normalized_0_1000",
                                 "tooltip": "Qwen3-VL/3.5 use normalized 0-1000. Use absolute_pixels for Qwen2.5-VL style models."}),
@@ -378,6 +558,8 @@ class MOSSLayoutFromQwenVL:
                                            "tooltip": "Qwen decides what to detect by itself: people and their body parts, clothing, objects and background regions, to match the reference layout as closely as possible. Anything in targets is still included."}),
                 "max_items": ("INT", {"default": 40, "min": 5, "max": 120, "step": 1,
                                       "tooltip": "Smart mode only: maximum number of regions Qwen may return."}),
+                "style_in_items": ("BOOLEAN", {"default": True,
+                                               "tooltip": "Every item caption must carry the meta style (Qwen is asked to, and 'Rendered as <meta>.' is added if it doesn't). Turn off to keep style only in the overall caption."}),
             },
         }
 
@@ -388,7 +570,7 @@ class MOSSLayoutFromQwenVL:
 
     def run(self, image, width, height, targets, meta, coord_mode,
             max_new_tokens, temperature, seed, clip=None, hf_model="", keep_loaded=False,
-            change_request="", box_padding=0.0, smart_mode=False, max_items=40):
+            change_request="", box_padding=0.0, smart_mode=False, max_items=40, style_in_items=True):
         pil = _tensor_to_pil(image)
         iw, ih = pil.size
         W = _round16(width if width > 0 else iw)
@@ -397,7 +579,7 @@ class MOSSLayoutFromQwenVL:
         target_list = [t.strip() for t in targets.splitlines() if t.strip()]
         text_ok = _wants_text(targets, change_request)
         prompt = _build_qwen_prompt(target_list, W, H, iw, ih, coord_mode,
-                                    change_request, meta, smart_mode, max_items, text_ok)
+                                    change_request, meta, smart_mode, max_items, text_ok, style_in_items)
 
         if clip is not None:
             raw = _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed)
@@ -413,6 +595,13 @@ class MOSSLayoutFromQwenVL:
         if not isinstance(data, dict):
             raise RuntimeError("Could not parse JSON from Qwen output. See raw_qwen_output:\n" + raw[:1500])
 
+        tags = _meta_tags(meta)
+        item_alt, summ_alt = _style_patterns(tags)
+        removed = []
+        mono = _is_mono(tags)
+        recolored = 0
+        items_styled = 0
+
         items_out = []
         for it in data.get("items", []) or []:
             if not isinstance(it, dict):
@@ -427,18 +616,34 @@ class MOSSLayoutFromQwenVL:
             cap = str(it.get("caption", "")).strip()
             if not text_ok:
                 cap = _strip_text_mentions(cap)
+            cap, rem = _strip_style_words(cap, item_alt)
+            removed += rem
+            if mono:
+                cap, n = _to_mono(cap)
+                recolored += n
+            if style_in_items and tags:
+                cap, was_added = _ensure_item_style(cap, tags)
+                items_styled += was_added
             entry = {"label": label, "caption": cap}
             if label == "text":
                 entry["text"] = str(it.get("text", ""))
             entry["bbox"] = moss_bb
             items_out.append(entry)
 
+        summary = (_strip_text_mentions(str(data.get("caption", "")))
+                   if not text_ok else str(data.get("caption", "")).strip())
+        summary, rem = _strip_style_words(summary, summ_alt)
+        removed += rem
+        if mono:
+            summary, n = _to_mono(summary)
+            recolored += n
+        summary, added = _ensure_summary_style(summary, tags)
+
         layout = {
             "summary": {
-                "meta": [m.strip() for m in meta.split(",") if m.strip()],
+                "meta": tags,
                 "canvas": "single",
-                "caption": (_strip_text_mentions(str(data.get("caption", "")))
-                            if not text_ok else str(data.get("caption", "")).strip()),
+                "caption": summary,
             },
             "items": items_out,
             "bbox_coord_space": "abs_centralized",
@@ -450,7 +655,16 @@ class MOSSLayoutFromQwenVL:
         prev = pil.resize((W, H), Image.LANCZOS)
         _draw_preview(prev, items_out, W, H)
 
-        return (out_prompt, _pil_to_tensor(prev), raw, W, H)
+        meta_note = f"\n\n[meta] locked: {', '.join(tags) or '(none)'}"
+        if removed:
+            meta_note += " | removed conflicting style words: " + ", ".join(sorted(set(removed)))
+        if recolored:
+            meta_note += f" | no-color style: {recolored} color word(s) converted to gray tones"
+        if items_styled:
+            meta_note += f" | style clause added to {items_styled} item caption(s)"
+        if added:
+            meta_note += " | overall caption did not state the style, so it was added"
+        return (out_prompt, _pil_to_tensor(prev), raw + meta_note, W, H)
 
 
 NODE_CLASS_MAPPINGS = {"MOSSLayoutFromQwenVL": MOSSLayoutFromQwenVL}

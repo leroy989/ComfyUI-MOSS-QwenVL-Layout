@@ -5,8 +5,6 @@ Qwen3-VL / Qwen3.5-VL looks at your image, finds the things you ask for (includi
 
 You can also add **change requests** ("make the dress red", "replace the man with an elderly woman in a grey coat", "add a dog on the left"). The captions are then written to describe the *edited* result, so MOSS generates the changed version while keeping the original composition.
 
-<img width="3373" height="1205" alt="Screenshot 2026-10-27 145849" src="https://github.com/user-attachments/assets/9120a6eb-0ff7-4c3c-9d4f-5ef19cdc46e7" />
-
 > Unofficial community node. Not affiliated with the MOSS-Image team or Alibaba/Qwen.
 
 ## Install
@@ -42,7 +40,7 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 | `image` | Reference image |
 | `width`, `height` | Target MOSS canvas (0 = use image size), rounded to multiples of 16 |
 | `targets` | Things to detect, one per line |
-| `meta` | Comma-separated style/meta tags for `summary.meta` (e.g. `poster`, `photo`). This is the **only** place style comes from: Qwen is told not to describe art style or medium in any caption |
+| `meta` | Style lock: comma-separated tags (e.g. `photo`, `anime, cel shading`). See *Meta lock* below |
 | `coord_mode` | `normalized_0_1000` (Qwen3-VL / 3.5) or `absolute_pixels` (Qwen2.5-VL style) |
 | `max_new_tokens`, `temperature`, `seed` | Generation settings |
 | `clip` *(optional)* | Qwen VL text encoder |
@@ -50,6 +48,7 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 | `change_request` *(optional)* | Edits to apply, one per line |
 | `smart_mode` *(optional)* | Qwen picks the targets itself: people and their body parts, clothing, objects, background regions. Anything in `targets` is still included |
 | `max_items` *(optional)* | Smart mode only: cap on the number of regions (default 40) |
+| `style_in_items` *(optional)* | Require every item caption to carry the meta style (default on) |
 | `box_padding` *(optional)* | Grow every box by this % per side (0 = off), on top of Qwen's own estimate of hidden parts |
 
 ### Outputs
@@ -66,6 +65,17 @@ Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Q
 - Describe replacements in concrete visual terms: "elderly woman, grey wool coat, short white hair" works better than "a different person".
 - Boxes follow the reference image. For objects you add, Qwen guesses the position, so adjust the `bbox` values by hand if needed.
 - Global changes ("golden hour lighting", "winter") are applied to the overall caption and affected items.
+
+## Meta lock
+
+`meta` is the single source of style, and it is enforced in several ways:
+1. **Prompt:** Qwen is told the final image will be generated *only* in that style, that the reference image is a layout and content reference only (its own style and colors don't carry over), and that the overall caption must open with the style words. The "describe colors" wording is swapped for "tones" when the meta is monochrome.
+2. **Every item carries the style** (`style_in_items`, on by default): each item caption must say how that element is rendered in the locked style. If Qwen doesn't, `Rendered as <meta>.` is appended. Turn the option off to keep style only in the overall caption.
+3. **No-color metas** (`black and white`, `monochrome`, `grayscale`, `no color`, ...): color words in any caption are converted to gray tones (`green` -> `mid-gray`, `dark blue` -> `dark gray`, `colorful` -> `high-contrast`).
+4. **Other styles are stripped:** words from styles not in your meta (for example `photorealistic` or `bokeh` when the meta is `anime`) are removed from every caption. Words named in your meta are never touched. Ambiguous nouns like `photograph` or `illustration` are only checked in the overall caption, so an item like "a photo frame" survives.
+5. **Forced:** if the overall caption still doesn't mention any meta tag, `Style: <tags>.` is added to the front. `summary.meta` always equals your tags exactly.
+
+What was changed is reported at the end of `raw_qwen_output` (`[meta] locked: ...`). The cleanup is word-based, so a heavily conflicting caption can read slightly clipped.
 
 ## Text handling
 
