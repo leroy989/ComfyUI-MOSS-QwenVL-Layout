@@ -7,6 +7,9 @@ There are two modes. **From image** (default) detects and captions a reference i
 
 You can also add **change requests** ("make the dress red", "replace the man with an elderly woman in a grey coat", "add a dog on the left"). The captions are then written to describe the *edited* result, so MOSS generates the changed version while keeping the original composition.
 
+<img width="3134" height="1148" alt="Screenshot 2026-10-28 210728" src="https://github.com/user-attachments/assets/56e15571-0628-4309-8529-f924c7e0cec6" />
+<img width="3176" height="1118" alt="Screenshot 2026-10-28 210340" src="https://github.com/user-attachments/assets/34b05d82-0342-4aaa-8cf7-cdf8f435184c" />
+
 > Unofficial community node. Not affiliated with the MOSS-Image team or Alibaba/Qwen.
 
 ## Install
