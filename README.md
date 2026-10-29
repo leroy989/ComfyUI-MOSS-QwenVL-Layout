@@ -22,6 +22,8 @@ pip install -r ComfyUI-MOSS-QwenVL-Layout/requirements.txt   # only needed for t
 ```
 Restart ComfyUI. The node is at **Add Node → MOSS-Image → MOSS Layout from Qwen-VL**.
 
+https://civitai.red/models/3023709/comfyui-moss-qwenvl-layout?modelVersionId=3436330
+
 ## Usage
 
 **From image**
