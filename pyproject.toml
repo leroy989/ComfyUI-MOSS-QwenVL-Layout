@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-moss-qwenvl-layout"
 description = "Use Qwen3-VL / Qwen3.5-VL to detect objects and text in an image and build a MOSS-Image layout JSON prompt, with a change-request box, built-in scale-to-total-pixels, depth ordering and an experimental text-only mode that designs the layout from a prompt."
-version = "1.1.0"
+version = "1.1.1"
 license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.10"

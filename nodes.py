@@ -694,21 +694,34 @@ def _build_layout_prompt_text(user_prompt, W, H, targets, changes, meta, max_ite
             if targets else "")
 
     ex_items = [
-        ("A wide sky filling the upper half, glowing near the horizon.", [0, 0, 1000, 540], 1),
-        ("A grassy hill filling the lower half, behind and below both figures.", [0, 500, 1000, 1000], 2),
-        ("A horse standing at the right, side view facing left, in front of the hill.", [520, 330, 940, 890], 3),
-        ("A knight in plate armor standing at the left facing right, helmet under his arm, in front of the hill.",
-         [170, 250, 450, 890], 3),
+        ("A plain wall filling the background behind the counter and the man.", [0, 0, 1000, 760], 1),
+        ("A wooden floor across the foreground, visible around and in front of the man's feet.", [0, 640, 1000, 1000], 2),
+        ("A window on the upper-left wall, behind the man.", [60, 40, 340, 480], 2),
+        ("A kitchen counter along the right, in front of the wall.", [520, 460, 980, 860], 3),
+        ("A pot sitting on the counter in the upper-right of the frame, not down on the floor.", [700, 300, 900, 500], 4),
+        ("A man standing left of center, head in the upper-middle, feet near the bottom edge, standing on the floor.",
+         [240, 300, 520, 980], 5),
     ]
-    example = {"caption": "A knight beside his horse on a hill at sunrise.", "items": [
+    example = {"caption": "A man standing in a kitchen beside a counter.", "items": [
         {"label": "object", "caption": c, **({"layer": l} if depth != "off" else {}), "bbox_2d": b}
         for c, b, l in ex_items]}
     ex_json = json.dumps(example, ensure_ascii=False)
-    shape = f"{H / W:.2f}"
     ar = f"{W / H:.2f}:1"
+    # Same bbox contract as image mode (normalized 0-1000, origin top-left, x then y, y downward).
+    coord_rule = (
+        "bbox_2d must be [x1, y1, x2, y2] in normalized 0-1000 coordinates relative to the "
+        "full canvas (origin at the top-left, x to the right, y downward). "
+        f"The canvas is {W} px wide by {H} px tall, so one unit of x is {W / 1000:.2f} px and "
+        f"one unit of y is {H / 1000:.2f} px. y=0 is the top edge and y=1000 is the bottom edge; "
+        "a lamp high in the frame has a small y, not a large one. "
+        "A box with equal x and y extents is not square unless the canvas is square; something "
+        f"that should look square needs an x extent of about {H / W:.2f} times its y extent. "
+        "Keep x1 < x2, y1 < y2, and every box inside 0-1000."
+    )
 
     return f"""You are an expert art director and layout planner for a text-to-image model that is guided by bounding boxes.
-Turn the user's prompt into a complete, well-composed layout for a {W}x{H} canvas (width {W}, height {H}, aspect ratio {ar}).
+Turn the user's prompt into a complete layout for a {W}x{H} canvas (width {W}, height {H}, aspect ratio {ar}).
+Place every box the way an object detector would on a photograph of the finished image. This is the same layout image mode produces when it looks at a real picture: each box is the element's full pixel extent in that photo, not a schematic.
 {extra}
 USER'S PROMPT:
 -----
@@ -717,10 +730,13 @@ USER'S PROMPT:
 {must}
 How to plan:
 1. List every subject, character, object and background region the prompt mentions, and add the supporting elements the scene naturally implies (ground, sky, walls, furniture, props). Use as many elements as the scene needs, at most {max_items}; a simple prompt needs only a handful. Do not add unrelated things.
-2. Compose the canvas well: the main subject is prominent and not cut off, space is balanced, scale relationships are sensible (a person is much smaller than a house, a hand is smaller than its arm), parts sit inside their wholes (a head at the top of its body box, a hat on the head), and background regions cover the area behind everything.
-3. Give every element a bounding box [x1, y1, x2, y2] in normalized 0-1000 coordinates: origin at the top-left, x to the right, y downward, 0-1000 on both axes whatever the canvas size. x comes FIRST. Keep x1 < x2, y1 < y2, and everything inside 0-1000.
-4. Mind the canvas shape: one unit of x is {W / 1000:.2f} px and one unit of y is {H / 1000:.2f} px. A box with equal x and y extents is not square unless the canvas is square; something that should look square needs an x extent of about {shape} times its y extent.
-5. Boxes overlap only where things really overlap or contain each other (a person in front of a background, a hat on a head).
+2. Imagine the finished photograph first, then box what would actually be visible. Boxes cover the element's FULL estimated extent, including parts hidden behind or inside other things, and they stay inside the frame. Overlapping boxes are expected wherever things really overlap (a person in front of a bed, a lamp on a table, floor in front of both).
+3. Match a real camera, not a diagram with a thin ground line:
+   - y=0 is the top of the picture and y=1000 is the bottom. Anything high in the frame (a lamp shade, a headboard, a window, a head) has a small y. Do not drop it into the bottom quarter.
+   - Floor or ground is a large foreground region, usually from around the middle of the frame down to y=1000, and it continues around and in front of people's feet. It is not a thin strip at y=900-1000, and subjects do not stop where the floor box starts.
+   - A standing person in the foreground runs from the upper-middle (head) to near the bottom edge (feet). Furniture against the far wall sits in the middle of the frame, with its top well above the vertical center. Do not crush the people, furniture and lamps into the bottom 30% under a huge empty wall.
+4. {coord_rule}
+5. Scale and containment must be sensible: a person is much smaller than the room, a hand is smaller than its arm, a hat sits on the head, a lamp sits on the nightstand rather than on the floor beside it, and a head is at the top of its body box.
 
 Return exactly one JSON object and nothing else:
 {{
@@ -728,7 +744,7 @@ Return exactly one JSON object and nothing else:
   "items": [
     {{
       {label_line}
-      "caption": "detailed description of this element: 2-4 sentences covering appearance, {color_word}, materials, clothing, pose or orientation, expression, and its spatial relationships (what it is in front of, behind, holding, inside or touching)",
+      "caption": "detailed description of this element: 2-4 sentences covering appearance, {color_word}, materials, clothing, pose or orientation, expression, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
 {text_field}{layer_field}      "bbox_2d": [x1, y1, x2, y2]
     }}
   ]
@@ -738,8 +754,9 @@ Rules:
 - Captions are specific and detailed: for people include clothing, hair, expression, pose, facing direction and where hands and feet are; for objects include material, {color_one}, shape, size and state.
 {layer_rule}{text_rule}- Write captions in English.
 {style_rule}- Output JSON only, no Markdown, no explanation.
+- If the layout can only be read as "thin strip of floor, everything piled on it", it is wrong. Redo it as a photograph.
 
-Format example only (it shows how boxes relate to a scene on a SQUARE canvas; never reuse its content), for the prompt "a knight standing beside his horse on a hill at sunrise":
+Format example only (never reuse its scene or its numbers). Photograph-style boxes for "a man standing in a kitchen, a window behind him, a pot on the counter to his right". The floor is a deep foreground, the pot is high in the frame, and the man's feet reach the bottom edge:
 {ex_json}"""
 
 
