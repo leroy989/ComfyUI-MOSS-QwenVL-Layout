@@ -1,8 +1,8 @@
 {
   "id": "10f20c66-473f-4d9e-90d2-e52d647e66ca",
   "revision": 0,
-  "last_node_id": 527,
-  "last_link_id": 816,
+  "last_node_id": 531,
+  "last_link_id": 830,
   "nodes": [
     {
       "id": 20,
@@ -16,7 +16,7 @@
         955.3157225807955
       ],
       "flags": {},
-      "order": 9,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -71,7 +71,7 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            793
+            824
           ]
         },
         {
@@ -86,11 +86,11 @@
         "Node name for S&R": "LoadImage"
       },
       "widgets_values": [
-        "35792790_001_060b.jpg",
+        "4769_by_lgmac_dn682qb-pre.jpg",
         "image"
       ],
       "widgets_values_named": {
-        "image": "35792790_001_060b.jpg",
+        "image": "4769_by_lgmac_dn682qb-pre.jpg",
         "upload": "image"
       }
     },
@@ -98,8 +98,8 @@
       "id": 267,
       "type": "PixaromaRunTimer",
       "pos": [
-        815.2407337441257,
-        1443.910758129727
+        803.8250178625251,
+        1412.5175394553253
       ],
       "size": [
         141,
@@ -116,7 +116,7 @@
         "aux_id": "pixaroma/ComfyUI-Pixaroma",
         "ver": "7267fdcbf38234d93072d411d637221e28e68350",
         "Node name for S&R": "PixaromaRunTimer",
-        "runTimerLastMs": 38297.80000001192
+        "runTimerLastMs": 42879.10000002384
       },
       "color": "#1d1d1d",
       "bgcolor": "#2a2a2a"
@@ -142,7 +142,7 @@
           "widget": {
             "name": "text"
           },
-          "link": 792
+          "link": 826
         },
         {
           "name": "width",
@@ -150,7 +150,7 @@
           "widget": {
             "name": "width"
           },
-          "link": 799
+          "link": 829
         },
         {
           "name": "height",
@@ -158,7 +158,7 @@
           "widget": {
             "name": "height"
           },
-          "link": 800
+          "link": 830
         }
       ],
       "outputs": [
@@ -167,7 +167,7 @@
           "type": "IMAGE",
           "links": [
             781,
-            805
+            823
           ]
         }
       ],
@@ -186,10 +186,10 @@
         "",
         "moss_image_sft_int8_convrot.safetensors",
         "qwen3.5_9b_int8_convrot.safetensors",
-        "Moss\\lora_dmd2.safetensors",
-        0.8,
-        12,
-        2.5,
+        "Moss\\MOSS-Image-SFT-8-steps-dmd.safetensors",
+        1,
+        8,
+        1,
         1536,
         1024
       ],
@@ -197,236 +197,20 @@
         "text": "",
         "unet_name": "moss_image_sft_int8_convrot.safetensors",
         "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
-        "lora_name": "Moss\\lora_dmd2.safetensors",
-        "strength_model": 0.8,
-        "steps": 12,
-        "cfg": 2.5,
+        "lora_name": "Moss\\MOSS-Image-SFT-8-steps-dmd.safetensors",
+        "strength_model": 1,
+        "steps": 8,
+        "cfg": 1,
         "width": 1536,
         "height": 1024
-      }
-    },
-    {
-      "id": 521,
-      "type": "MOSSLayoutFromQwenVL",
-      "pos": [
-        230.07754313647314,
-        589.3792115816334
-      ],
-      "size": [
-        451.8896176436381,
-        813.9845730160118
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 804
-        },
-        {
-          "name": "clip",
-          "shape": 7,
-          "type": "CLIP",
-          "link": 803
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "widget": {
-            "name": "width"
-          },
-          "link": 795
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "widget": {
-            "name": "height"
-          },
-          "link": 796
-        }
-      ],
-      "outputs": [
-        {
-          "name": "prompt",
-          "type": "STRING",
-          "links": [
-            792,
-            814
-          ]
-        },
-        {
-          "name": "preview",
-          "type": "IMAGE",
-          "links": [
-            807
-          ]
-        },
-        {
-          "name": "raw_qwen_output",
-          "type": "STRING",
-          "links": null
-        },
-        {
-          "name": "width",
-          "type": "INT",
-          "links": null
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": null
-        }
-      ],
-      "properties": {
-        "aux_id": "leroy989/ComfyUI-MOSS-QwenVL-Layout",
-        "ver": "b04987b13d3df30e7c4092329ae9d0a7784001c1",
-        "Node name for S&R": "MOSSLayoutFromQwenVL"
-      },
-      "widgets_values": [
-        0,
-        0,
-        "",
-        "real life photography",
-        "normalized_0_1000",
-        4096,
-        0.2,
-        329873493325089,
-        "randomize",
-        "Qwen/Qwen3-VL-8B-Instruct",
-        false,
-        "",
-        0,
-        false,
-        40
-      ],
-      "widgets_values_named": {
-        "width": 0,
-        "height": 0,
-        "targets": "",
-        "meta": "real life photography",
-        "coord_mode": "normalized_0_1000",
-        "max_new_tokens": 4096,
-        "temperature": 0.2,
-        "seed": 329873493325089,
-        "control_after_generate": "randomize",
-        "hf_model": "Qwen/Qwen3-VL-8B-Instruct",
-        "keep_loaded": false,
-        "change_request": "",
-        "box_padding": 0,
-        "smart_mode": false,
-        "max_items": 40
-      }
-    },
-    {
-      "id": 522,
-      "type": "ImageScaleToTotalPixels",
-      "pos": [
-        -122.42095777065492,
-        1087.5195409605597
-      ],
-      "size": [
-        276.4927734375,
-        106
-      ],
-      "flags": {},
-      "order": 3,
-      "mode": 0,
-      "showAdvanced": true,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 793
-        }
-      ],
-      "outputs": [
-        {
-          "name": "IMAGE",
-          "type": "IMAGE",
-          "links": [
-            794,
-            804,
-            806
-          ]
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.42.0",
-        "Node name for S&R": "ImageScaleToTotalPixels"
-      },
-      "widgets_values": [
-        "nearest-exact",
-        2,
-        16
-      ],
-      "widgets_values_named": {
-        "upscale_method": "nearest-exact",
-        "megapixels": 2,
-        "resolution_steps": 16
-      }
-    },
-    {
-      "id": 523,
-      "type": "GetImageSize",
-      "pos": [
-        -39.2476577097514,
-        1253.696041464311
-      ],
-      "size": [
-        140,
-        66
-      ],
-      "flags": {
-        "collapsed": true
-      },
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 794
-        }
-      ],
-      "outputs": [
-        {
-          "name": "width",
-          "type": "INT",
-          "links": [
-            795,
-            799
-          ]
-        },
-        {
-          "name": "height",
-          "type": "INT",
-          "links": [
-            796,
-            800
-          ]
-        },
-        {
-          "name": "batch_size",
-          "type": "INT",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.42.0",
-        "Node name for S&R": "GetImageSize"
       }
     },
     {
       "id": 524,
       "type": "CLIPLoader",
       "pos": [
-        -108.25180653791914,
-        1299.1945878681747
+        -52.124536786717265,
+        1080.3933668041664
       ],
       "size": [
         270,
@@ -441,7 +225,7 @@
           "name": "CLIP",
           "type": "CLIP",
           "links": [
-            803
+            825
           ]
         }
       ],
@@ -451,12 +235,12 @@
         "Node name for S&R": "CLIPLoader"
       },
       "widgets_values": [
-        "qwen3.5_9b_int8_convrot.safetensors",
+        "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
         "stable_diffusion",
         "default"
       ],
       "widgets_values_named": {
-        "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+        "clip_name": "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
         "type": "stable_diffusion",
         "device": "default"
       }
@@ -465,28 +249,28 @@
       "id": 525,
       "type": "Image Comparer (rgthree)",
       "pos": [
-        1963.3292618099063,
-        635.074067852472
+        1965.2318811235084,
+        644.5871644204716
       ],
       "size": [
         781.1171591414194,
         921.8116655816289
       ],
       "flags": {},
-      "order": 10,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
           "dir": 3,
           "name": "image_a",
           "type": "IMAGE",
-          "link": 806
+          "link": 828
         },
         {
           "dir": 3,
           "name": "image_b",
           "type": "IMAGE",
-          "link": 805
+          "link": 823
         }
       ],
       "outputs": [
@@ -508,12 +292,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_rdsum_00007_.png&type=temp&subfolder=&rand=0.6694768882974783"
+            "url": "/api/view?filename=rgthree.compare._temp_gtrji_00015_.png&type=temp&subfolder=&rand=0.8679851584090811"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_rdsum_00008_.png&type=temp&subfolder=&rand=0.6389183905113028"
+            "url": "/api/view?filename=rgthree.compare._temp_gtrji_00016_.png&type=temp&subfolder=&rand=0.7559735162028421"
           }
         ]
       ],
@@ -523,13 +307,13 @@
             {
               "name": "A",
               "selected": true,
-              "url": "/api/view?filename=rgthree.compare._temp_rdsum_00007_.png&type=temp&subfolder=&rand=0.6694768882974783",
+              "url": "/api/view?filename=rgthree.compare._temp_gtrji_00015_.png&type=temp&subfolder=&rand=0.8679851584090811",
               "img": {}
             },
             {
               "name": "B",
               "selected": true,
-              "url": "/api/view?filename=rgthree.compare._temp_rdsum_00008_.png&type=temp&subfolder=&rand=0.6389183905113028",
+              "url": "/api/view?filename=rgthree.compare._temp_gtrji_00016_.png&type=temp&subfolder=&rand=0.7559735162028421",
               "img": {}
             }
           ]
@@ -537,59 +321,25 @@
       }
     },
     {
-      "id": 526,
-      "type": "PreviewImage",
-      "pos": [
-        -414.5479655869711,
-        1075.0660327260855
-      ],
-      "size": [
-        281.74513886320483,
-        357.0557605664112
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "link": 807
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": null
-        }
-      ],
-      "properties": {
-        "cnr_id": "comfy-core",
-        "ver": "0.42.0",
-        "Node name for S&R": "PreviewImage"
-      }
-    },
-    {
       "id": 527,
       "type": "easy showAnything",
       "pos": [
-        696.2107671152866,
-        1020.852818016889
+        698.1133864288864,
+        993.2648379696881
       ],
       "size": [
         388.2918204248085,
         380.8385019864122
       ],
       "flags": {},
-      "order": 7,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
           "name": "anything",
           "shape": 7,
           "type": "*",
-          "link": 814
+          "link": 827
         }
       ],
       "outputs": [
@@ -603,7 +353,166 @@
         "cnr_id": "comfyui-easy-use",
         "ver": "b0b47ca1372117fce575d9e744655344ebff6bef",
         "Node name for S&R": "easy showAnything"
+      },
+      "widgets_values": [
+        "{\n  \"summary\": {\n    \"meta\": [\n      \"real life photography\"\n    ],\n    \"canvas\": \"single\",\n    \"caption\": \"A real life photography style close-up of a whimsical, stitched scarecrow-like creature with large, expressive eyes, resting its hands on a pumpkin. The scene is with high-definition realism, capturing the texture of the creature's skin, the fabric of its hat, and the organic details of the pumpkin against a moody, atmospheric background.\"\n  },\n  \"items\": [\n    {\n      \"label\": \"object\",\n      \"caption\": \"Dark, twisted tree branches and foliage forming a spooky, atmospheric background. The leaves are sparse and shadowy, creating a sense of depth and mystery. It is positioned behind the creature, filling the upper and side portions of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -968,\n        544,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A central, anthropomorphic scarecrow figure with pale, stitched skin and large, bulging turquoise eyes. It has messy, dark hair and wears a tattered, striped hat. The creature is leaning forward, resting its hands on a pumpkin in the foreground, with its head and upper torso dominating the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -533,\n        -929,\n        511,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A faint, glowing pumpkin visible in the lower left background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower left corner, behind the creature's left arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        -968,\n        435,\n        -736\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Another faint, glowing pumpkin visible in the lower right background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower right corner, behind the creature's right arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        736,\n        435,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The face is pale and textured like stitched fabric, featuring a wide, toothless grin formed by black thread. It has large, round eyes with bright turquoise irises and dilated pupils, giving an intense, staring expression. The face is positioned centrally, slightly tilted downwards. Rendered as real life photography.\",\n      \"bbox\": [\n        -326,\n        -465,\n        381,\n        426\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A tall, floppy hat made of rough, patchwork fabric in shades of orange and teal. It features a wide brim and a pointed top, with visible stitching details along the rim. The hat sits atop the creature's head, slightly askew. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -939,\n        54,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the left side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the left side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -22,\n        -620,\n        131,\n        -465\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the right side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the right side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -196,\n        407,\n        22,\n        561\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Messy, dark, spiky hair framing the creature's face and extending outwards. It appears coarse and slightly unkempt, blending with the texture of the hat. The hair is positioned around the head, with strands falling over the forehead and ears. Rendered as real life photography.\",\n      \"bbox\": [\n        -528,\n        -910,\n        272,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pale, skeletal hand with long, thin fingers resting on the pumpkin. The fingers are slightly curled, showing detailed knuckles and fingernails. It is positioned on the left side of the pumpkin, supporting the creature's weight. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        -503,\n        517,\n        -19\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A matching pale, skeletal hand resting on the pumpkin to the right of the left hand. The fingers are spread slightly, mirroring the pose of the other hand. It is positioned on the right side of the pumpkin, completing the resting pose. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        39,\n        511,\n        523\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The left arm extends from the creature's shoulder, covered in a rough, striped fabric sleeve in orange and teal. The arm ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower left portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        196,\n        -823,\n        490,\n        -387\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The right arm extends from the creature's shoulder, mirroring the left arm with a matching striped fabric sleeve. It ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower right portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        174,\n        290,\n        490,\n        842\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A large, orange pumpkin with a ribbed texture, serving as a base for the creature's hands. It is positioned in the lower foreground, partially cut off by the bottom edge of the frame. The pumpkin's surface shows natural imperfections and a warm, glowing hue. Rendered as real life photography.\",\n      \"bbox\": [\n        359,\n        -784,\n        544,\n        803\n      ]\n    }\n  ],\n  \"bbox_coord_space\": \"abs_centralized\",\n  \"bbox_format\": \"yxyx\"\n}"
+      ],
+      "widgets_values_named": {
+        "text": "{\n  \"summary\": {\n    \"meta\": [\n      \"real life photography\"\n    ],\n    \"canvas\": \"single\",\n    \"caption\": \"A real life photography style close-up of a whimsical, stitched scarecrow-like creature with large, expressive eyes, resting its hands on a pumpkin. The scene is with high-definition realism, capturing the texture of the creature's skin, the fabric of its hat, and the organic details of the pumpkin against a moody, atmospheric background.\"\n  },\n  \"items\": [\n    {\n      \"label\": \"object\",\n      \"caption\": \"Dark, twisted tree branches and foliage forming a spooky, atmospheric background. The leaves are sparse and shadowy, creating a sense of depth and mystery. It is positioned behind the creature, filling the upper and side portions of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -968,\n        544,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A central, anthropomorphic scarecrow figure with pale, stitched skin and large, bulging turquoise eyes. It has messy, dark hair and wears a tattered, striped hat. The creature is leaning forward, resting its hands on a pumpkin in the foreground, with its head and upper torso dominating the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -533,\n        -929,\n        511,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A faint, glowing pumpkin visible in the lower left background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower left corner, behind the creature's left arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        -968,\n        435,\n        -736\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Another faint, glowing pumpkin visible in the lower right background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower right corner, behind the creature's right arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        736,\n        435,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The face is pale and textured like stitched fabric, featuring a wide, toothless grin formed by black thread. It has large, round eyes with bright turquoise irises and dilated pupils, giving an intense, staring expression. The face is positioned centrally, slightly tilted downwards. Rendered as real life photography.\",\n      \"bbox\": [\n        -326,\n        -465,\n        381,\n        426\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A tall, floppy hat made of rough, patchwork fabric in shades of orange and teal. It features a wide brim and a pointed top, with visible stitching details along the rim. The hat sits atop the creature's head, slightly askew. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -939,\n        54,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the left side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the left side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -22,\n        -620,\n        131,\n        -465\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the right side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the right side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -196,\n        407,\n        22,\n        561\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Messy, dark, spiky hair framing the creature's face and extending outwards. It appears coarse and slightly unkempt, blending with the texture of the hat. The hair is positioned around the head, with strands falling over the forehead and ears. Rendered as real life photography.\",\n      \"bbox\": [\n        -528,\n        -910,\n        272,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pale, skeletal hand with long, thin fingers resting on the pumpkin. The fingers are slightly curled, showing detailed knuckles and fingernails. It is positioned on the left side of the pumpkin, supporting the creature's weight. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        -503,\n        517,\n        -19\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A matching pale, skeletal hand resting on the pumpkin to the right of the left hand. The fingers are spread slightly, mirroring the pose of the other hand. It is positioned on the right side of the pumpkin, completing the resting pose. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        39,\n        511,\n        523\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The left arm extends from the creature's shoulder, covered in a rough, striped fabric sleeve in orange and teal. The arm ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower left portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        196,\n        -823,\n        490,\n        -387\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The right arm extends from the creature's shoulder, mirroring the left arm with a matching striped fabric sleeve. It ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower right portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        174,\n        290,\n        490,\n        842\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A large, orange pumpkin with a ribbed texture, serving as a base for the creature's hands. It is positioned in the lower foreground, partially cut off by the bottom edge of the frame. The pumpkin's surface shows natural imperfections and a warm, glowing hue. Rendered as real life photography.\",\n      \"bbox\": [\n        359,\n        -784,\n        544,\n        803\n      ]\n    }\n  ],\n  \"bbox_coord_space\": \"abs_centralized\",\n  \"bbox_format\": \"yxyx\"\n}"
       }
+    },
+    {
+      "id": 528,
+      "type": "MOSSLayoutFromQwenVL",
+      "pos": [
+        230.07754313647314,
+        589.3792115816334
+      ],
+      "size": [
+        459.2147020009984,
+        1064.0838817887402
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 824
+        },
+        {
+          "name": "clip",
+          "shape": 7,
+          "type": "CLIP",
+          "link": 825
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            826,
+            827
+          ]
+        },
+        {
+          "name": "preview",
+          "type": "IMAGE",
+          "links": [
+            828
+          ]
+        },
+        {
+          "name": "raw_qwen_output",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            829
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            830
+          ]
+        },
+        {
+          "name": "scaled_image",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-moss-qwenvl-layout",
+        "ver": "fe70628f4cdb348c359fd98096e306c013319642",
+        "Node name for S&R": "MOSSLayoutFromQwenVL"
+      },
+      "widgets_values": [
+        "From image",
+        "",
+        "real life photography",
+        "",
+        2,
+        16,
+        "lanczos",
+        0,
+        0,
+        "normalized_0_1000",
+        4096,
+        0.2,
+        1072171598668056,
+        "randomize",
+        "4:3",
+        "Qwen/Qwen3-VL-8B-Instruct",
+        false,
+        "",
+        0,
+        true,
+        40,
+        true,
+        "back to front",
+        false
+      ],
+      "widgets_values_named": {
+        "mode": "From image",
+        "prompt": "",
+        "meta": "real life photography",
+        "targets": "",
+        "megapixels": 2,
+        "resolution_steps": 16,
+        "upscale_method": "lanczos",
+        "width": 0,
+        "height": 0,
+        "coord_mode": "normalized_0_1000",
+        "max_new_tokens": 4096,
+        "temperature": 0.2,
+        "seed": 1072171598668056,
+        "control_after_generate": "randomize",
+        "aspect_ratio": "4:3",
+        "hf_model": "Qwen/Qwen3-VL-8B-Instruct",
+        "keep_loaded": false,
+        "change_request": "",
+        "box_padding": 0,
+        "smart_mode": true,
+        "max_items": 40,
+        "style_in_items": true,
+        "depth_order": "back to front",
+        "enable_thinking": false
+      }
+    },
+    {
+      "id": 531,
+      "type": "MarkdownNote",
+      "pos": [
+        -358.7224794732922,
+        1244.768426895613
+      ],
+      "size": [
+        563.8727302487981,
+        249.1467142983829
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "**turbo lora**\n- [MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/resolve/main/lora.safetensors)\n\n**text_encoder**\n\n- [Qwen3.5-9B-abliterated_int8_convrot.safetensors](https://huggingface.co/beycanai/Qwen-LM/resolve/main/Qwen3.5-9B-abliterated_int8_convrot.safetensors)"
+      ],
+      "widgets_values_named": {
+        "text": "**turbo lora**\n- [MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/resolve/main/lora.safetensors)\n\n**text_encoder**\n\n- [Qwen3.5-9B-abliterated_int8_convrot.safetensors](https://huggingface.co/beycanai/Qwen-LM/resolve/main/Qwen3.5-9B-abliterated_int8_convrot.safetensors)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
     }
   ],
   "links": [
@@ -616,55 +525,7 @@
       "IMAGE"
     ],
     [
-      793,
-      259,
-      0,
-      522,
-      0,
-      "IMAGE"
-    ],
-    [
-      794,
-      522,
-      0,
-      523,
-      0,
-      "IMAGE"
-    ],
-    [
-      795,
-      523,
-      0,
-      521,
-      2,
-      "INT"
-    ],
-    [
-      796,
-      523,
-      1,
-      521,
-      3,
-      "INT"
-    ],
-    [
-      803,
-      524,
-      0,
-      521,
-      1,
-      "CLIP"
-    ],
-    [
-      804,
-      522,
-      0,
-      521,
-      0,
-      "IMAGE"
-    ],
-    [
-      805,
+      823,
       516,
       0,
       525,
@@ -672,49 +533,57 @@
       "IMAGE"
     ],
     [
-      806,
-      522,
+      824,
+      259,
       0,
-      525,
+      528,
       0,
       "IMAGE"
     ],
     [
-      807,
-      521,
+      825,
+      524,
+      0,
+      528,
       1,
-      526,
-      0,
-      "IMAGE"
+      "CLIP"
     ],
     [
-      814,
-      521,
+      826,
+      528,
+      0,
+      516,
+      0,
+      "STRING"
+    ],
+    [
+      827,
+      528,
       0,
       527,
       0,
       "STRING"
     ],
     [
-      792,
-      521,
+      828,
+      528,
+      1,
+      525,
       0,
-      516,
-      0,
-      "STRING"
+      "IMAGE"
     ],
     [
-      799,
-      523,
-      0,
+      829,
+      528,
+      3,
       516,
       1,
       "INT"
     ],
     [
-      800,
-      523,
-      1,
+      830,
+      528,
+      4,
       516,
       2,
       "INT"
@@ -728,8 +597,8 @@
         "version": 1,
         "state": {
           "lastGroupId": 40,
-          "lastNodeId": 527,
-          "lastLinkId": 816,
+          "lastNodeId": 531,
+          "lastLinkId": 830,
           "lastRerouteId": 9
         },
         "revision": 0,
@@ -1394,11 +1263,11 @@
               "Node name for S&R": "SeedNode"
             },
             "widgets_values": [
-              548185899778520,
+              363665988952089,
               "randomize"
             ],
             "widgets_values_named": {
-              "seed": 548185899778520,
+              "seed": 363665988952089,
               "control_after_generate": "randomize"
             }
           },
@@ -1639,13 +1508,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 1.0511824334504811,
+      "scale": 0.9556203940458919,
       "offset": [
-        469.0743996620958,
-        -440.91176689958564
+        613.4226676770904,
+        -339.46756440627234
       ]
     },
-    "frontendVersion": "1.57.1",
+    "frontendVersion": "1.57.6",
     "ue_links": [],
     "links_added_by_ue": [],
     "VHS_latentpreview": false,
@@ -1660,6 +1529,6 @@
   },
   "version": 0.4,
   "seed_widgets": {
-    "521": 7
+    "528": 12
   }
 }
