@@ -10,6 +10,7 @@ Backends
 import gc
 import inspect
 import json
+import math
 import re
 
 import numpy as np
@@ -40,17 +41,50 @@ def _round16(v: int) -> int:
 
 
 def _extract_json(text: str):
-    """Pull the first parseable JSON object/array out of a model response."""
+    """Pull the best JSON object/array out of a model response.
+    - ignores thinking blocks (closed, or closed by a lone </think>)
+    - prefers the object holding the most items
+    - if the answer was cut off mid-JSON, recovers every complete item (result has "_salvaged": True)
+    """
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    text = text.split("<think>")[0]                      # an unclosed thinking block holds no answer
     text = re.sub(r"```(?:json)?", "", text)
     dec = json.JSONDecoder()
+    parsed, best, best_n, pos = [], None, -1, 0
     for m in re.finditer(r"[\{\[]", text):
+        if m.start() < pos:          # nested inside an object we already parsed
+            continue
         try:
-            obj, _ = dec.raw_decode(text[m.start():])
-            return obj
+            obj, end = dec.raw_decode(text[m.start():])
         except json.JSONDecodeError:
             continue
-    return None
+        pos = m.start() + end
+        parsed.append(obj)
+        if isinstance(obj, dict) and isinstance(obj.get("items"), list):
+            n = len(obj["items"])
+        elif isinstance(obj, list) and obj and all(isinstance(x, dict) for x in obj):
+            n = len(obj)
+        else:
+            n = -1
+        if n > best_n:
+            best, best_n = obj, n
+    if best_n >= 0:
+        return best
+    # cut-off answer: the outer object never closed, so recover the complete item objects inside it
+    items = [o for o in parsed if isinstance(o, dict)
+             and ("bbox_2d" in o or "bbox" in o or ("id" in o and "caption" in o))]
+    if items:
+        cap = ""
+        mc = re.search(r'"caption"\s*:\s*("(?:[^"\\]|\\.)*")', text)
+        if mc and 0 <= mc.start() < (text.find('"items"') if '"items"' in text else len(text)):
+            try:
+                cap = json.loads(mc.group(1))
+            except Exception:
+                cap = ""
+        return {"caption": cap, "items": items, "_salvaged": True}
+    return parsed[0] if parsed else None
 
 
 _TEXT_WORDS = re.compile(
@@ -148,7 +182,7 @@ def _strip_style_words(text, alt):
     """Remove words of non-meta styles. Returns (clean_text, [removed words])."""
     if not alt or not text:
         return text, []
-    word = re.compile(rf"(?<![\w-])(?:{alt})(?![\w-])", re.I)
+    word = re.compile(rf"(?<![\w-])(?:{alt})(?:-(?:style|styled|inspired|like|esque)|(?![\w-]))", re.I)
     found = [m.group(0).lower() for m in word.finditer(text)]
     if not found:
         return text, []
@@ -157,11 +191,21 @@ def _strip_style_words(text, alt):
     # a style word used as a phrase ("with film grain", "in the style of a cartoon"): remove it with its connector
     text = re.sub(
         rf"(?:,\s*)?(?:\s+(?:in\s+(?:the\s+|an?\s+)?style\s+of|with|and|using|featuring|plus|in)\s+(?:an?\s+|the\s+)?)?"
-        rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic))?(?![\w-])"
+        rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic|inspired|like|esque))?(?![\w-])"
         rf"(?=\s*(?:[,.;:]|$)|\s+(?:and|with|in|behind|on|of|against|under|over|near)\b)",
         "", text, flags=re.I)
-    # a style word used as an adjective ("photorealistic portrait", "anime-style eyes"): just drop it
-    text = re.sub(rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic))?(?![\w-])", "", text, flags=re.I)
+    # a style word used as an adjective ("photorealistic portrait", "anime-style eyes"): drop it, leaving a marker
+    # so the article before it can be fixed ("An anime-style knight" -> "A knight")
+    text = re.sub(rf"(?<![\w-])(?:{alt})(?:[\s-]+(?:style|styled|look|aesthetic|inspired|like|esque))?(?![\w-])",
+                  "\x00", text, flags=re.I)
+
+    def _article(m):
+        art, nxt = m.group(1), m.group(2)
+        fixed = ("an" if nxt.lower() in "aeiou" else "a")
+        return (fixed.capitalize() if art[0].isupper() else fixed) + " " + nxt
+
+    text = re.sub(r"(?<![\w-])(an?|An?)\s+\x00\s*(\w)", _article, text)
+    text = text.replace("\x00", "")
     text = re.sub(r"(?<![\w-])(?:in\s+(?:the\s+|an?\s+)?style\s+of|in\s+an?|an?|the)\s*(?=[,.;:]|$)", "", text, flags=re.I)
     text = re.sub(r"\s+([,.;:])", r"\1", text)
     text = re.sub(r"([,;])\s*(?=[,.;])", "", text)
@@ -256,7 +300,7 @@ def _targets_block(targets, smart_mode, max_items):
 
 
 def _build_qwen_prompt(targets, W, H, iw, ih, coord_mode, changes, meta,
-                       smart_mode=False, max_items=40, text_ok=False, style_in_items=True):
+                       smart_mode=False, max_items=40, text_ok=False, style_in_items=True, depth="off"):
     if coord_mode == "normalized_0_1000":
         coord_rule = (
             "bbox_2d must be [x1, y1, x2, y2] in normalized 0-1000 coordinates relative to the "
@@ -341,6 +385,15 @@ How to apply the changes:
     else:
         change_block = ""
 
+    if depth != "off":
+        layer_field = '      "layer": 1,\n'
+        layer_rule = ("- layer: an integer depth order for every item. 1 = farthest from the camera (sky, backdrop, "
+                      "ground, walls); higher numbers are closer to the camera. Elements that overlap must have "
+                      "different layers so it is clear which is in front. In each caption say what the element is "
+                      "in front of or behind.\n")
+    else:
+        layer_field, layer_rule = "", ""
+
     smart_rule = ("- Order items: whole subjects first, then their parts and clothing, then objects, then background regions.\n"
                   if smart_mode else "- Order items from most to least prominent.\n")
 
@@ -358,7 +411,7 @@ Return exactly one JSON object and nothing else:
     {{
       {label_line}
       "caption": "detailed description of this element: 2-4 sentences covering appearance, {color_word}, materials, clothing, pose or orientation, and its spatial relationships (what it is in front of, behind, holding, inside or touching), including which parts are hidden or cut off",
-{text_field}      "bbox_2d": [x1, y1, x2, y2]
+{text_field}{layer_field}      "bbox_2d": [x1, y1, x2, y2]
     }}
   ]
 }}
@@ -367,7 +420,7 @@ Rules:
 - {coord_rule}
 - Boxes cover the element's FULL estimated extent, not just the visible part. If part of it is hidden behind or inside something else (a hand or foot behind a person, an object partly inside a container, a person cropped by another object), extend the box to where the whole element would be, staying inside the image bounds. Overlapping or nested boxes are fine. Fully visible elements get a tight box.
 - Captions must be specific and detailed. Always state spatial relationships and occlusion explicitly, for example "her left hand is hidden behind the man's shoulder" or "only the top half of the vase is visible above the counter". For people include clothing, hair, expression, pose, facing direction and where hands and feet are. For objects include material, {color_one}, shape, size and state.
-- Do not invent elements that are not visible.
+{layer_rule}- Do not invent elements that are not visible.
 - One item per instance (two people = two items).
 - Write captions in English.
 {text_lang_rule}{style_rule}
@@ -402,21 +455,21 @@ def _to_moss_bbox(bb, W, H, iw, ih, coord_mode, pad_pct=0.0):
 # Backends
 # --------------------------------------------------------------------------
 
-def _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed):
+def _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed, thinking=False):
     if not hasattr(clip, "generate") or not hasattr(clip, "tokenize"):
         raise RuntimeError(
             "This CLIP object has no .generate(). Update ComfyUI (text generation support is "
             "recent) and load Qwen3-VL/Qwen3.5-VL through a text-encoder loader, or disconnect "
             "the clip input and use the hf_model path instead."
         )
-    img_t = _pil_to_tensor(pil)
-
-    tok_kwargs = {"image": img_t}
+    tok_kwargs = {"image": _pil_to_tensor(pil)} if pil is not None else {}
     sig = inspect.signature(clip.tokenize).parameters
     if "skip_template" in sig:
         tok_kwargs["skip_template"] = False
     if "min_length" in sig:
         tok_kwargs["min_length"] = 1
+    if "thinking" in sig:
+        tok_kwargs["thinking"] = thinking
     tokens = clip.tokenize(prompt, **tok_kwargs)
 
     gen_kwargs = dict(
@@ -444,16 +497,25 @@ def _load_hf(model_id):
     return model, processor
 
 
-def _generate_with_hf(model_id, pil, prompt, max_new_tokens, temperature, seed, keep_loaded):
+def _unload_hf(model_id):
+    _HF_CACHE.pop(model_id, None)
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    if mm is not None:
+        mm.soft_empty_cache()
+
+
+def _generate_with_hf(model_id, pil, prompt, max_new_tokens, temperature, seed, keep_loaded, thinking=False):
     model, processor = _load_hf(model_id)
-    messages = [{"role": "user", "content": [
-        {"type": "image", "image": pil},
-        {"type": "text", "text": prompt},
-    ]}]
-    inputs = processor.apply_chat_template(
-        messages, tokenize=True, add_generation_prompt=True,
-        return_dict=True, return_tensors="pt",
-    ).to(model.device)
+    content = ([{"type": "image", "image": pil}] if pil is not None else []) + [{"type": "text", "text": prompt}]
+    messages = [{"role": "user", "content": content}]
+    chat_kwargs = dict(tokenize=True, add_generation_prompt=True, return_dict=True, return_tensors="pt")
+    try:
+        inputs = processor.apply_chat_template(messages, enable_thinking=thinking, **chat_kwargs)
+    except TypeError:                      # template/processor without the thinking switch
+        inputs = processor.apply_chat_template(messages, **chat_kwargs)
+    inputs = inputs.to(model.device)
     torch.manual_seed(seed)
     with torch.inference_mode():
         out = model.generate(
@@ -523,91 +585,323 @@ def _draw_preview(base, items, W, H):
         d.text((cx + pad - tb[0], cy + pad - tb[1]), label, fill=(0, 0, 0), font=font)
 
 
+# --------------------------------------------------------------------------
+# Canvas sizing (scale to total pixels, aspect ratios)
+# --------------------------------------------------------------------------
+
+UPSCALE_METHODS = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
+ASPECT_RATIOS = ["1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16", "21:9", "9:21"]
+_PIL_METHOD = {"nearest-exact": Image.NEAREST, "bilinear": Image.BILINEAR, "area": Image.BOX,
+               "bicubic": Image.BICUBIC, "lanczos": Image.LANCZOS}
+
+MODE_IMAGE = "From image"
+MODE_PROMPT = "From prompt (experimental)"
+DEPTH_MODES = ["back to front", "front to back", "off"]
+
+
+def _scale_image(image, megapixels, steps, method):
+    """Same maths as ComfyUI's 'Scale Image to Total Pixels'. Returns (tensor [1,H,W,3], W, H)."""
+    img = image[:1, :, :, :3]
+    h0, w0 = int(img.shape[1]), int(img.shape[2])
+    steps = max(1, int(steps))
+    if megapixels and megapixels > 0:
+        scale_by = math.sqrt(int(megapixels * 1024 * 1024) / (w0 * h0))
+        W = max(steps, int(round(w0 * scale_by / steps)) * steps)
+        H = max(steps, int(round(h0 * scale_by / steps)) * steps)
+    else:                                     # megapixels 0 = keep the original size (snapped to steps)
+        W = max(steps, int(round(w0 / steps)) * steps)
+        H = max(steps, int(round(h0 / steps)) * steps)
+    if (W, H) == (w0, h0):
+        return img, W, H
+    try:
+        import comfy.utils
+        s = comfy.utils.common_upscale(img.movedim(-1, 1), W, H, method, "disabled")
+        return s.movedim(1, -1), W, H
+    except Exception:
+        pil = _tensor_to_pil(img).resize((W, H), _PIL_METHOD.get(method, Image.LANCZOS))
+        return _pil_to_tensor(pil), W, H
+
+
+def _size_from_aspect(aspect, megapixels, steps):
+    try:
+        aw, ah = [float(v) for v in aspect.split(":")]
+    except Exception:
+        aw, ah = 1.0, 1.0
+    steps = max(1, int(steps))
+    total = int((megapixels if megapixels and megapixels > 0 else 1.0) * 1024 * 1024)
+    scale = math.sqrt(total / (aw * ah))
+    return (max(steps, int(round(aw * scale / steps)) * steps),
+            max(steps, int(round(ah * scale / steps)) * steps))
+
+
+# --------------------------------------------------------------------------
+# Prompt mode: build a complete box layout from text only (no image)
+# --------------------------------------------------------------------------
+
+def _build_layout_prompt_text(user_prompt, W, H, targets, changes, meta, max_items, text_ok,
+                              style_in_items=True, depth="off"):
+    tag_list = _meta_tags(meta)
+    meta_tags = ", ".join(tag_list)
+    mono = _is_mono(tag_list)
+    color_word, color_one = ("tones", "tone") if mono else ("colors", "color")
+
+    if text_ok:
+        text_rule = ('- Text: when the prompt asks for text (a title, sign, caption, label, words on an object), create '
+                     'one element with label "text" per piece of text, copy the string exactly as the prompt gives it, '
+                     "place it where such text normally sits, and size the box so the string fits (wide enough for "
+                     "its length). Never invent text the prompt did not ask for.\n")
+        label_line = '"label": "object", or "text" for a text element,'
+        text_field = '      "text": "exact text, only for label text",\n'
+    else:
+        text_rule = ("- The prompt asks for no text: create no text elements and never put written words, signs with "
+                     "writing, logos or captions in any caption.\n")
+        label_line = '"label": "object",'
+        text_field = ""
+
+    if meta_tags:
+        item_clause = (
+            "  Every item caption must also include a short clause saying how that element is rendered in the locked "
+            "style, using the meta words. Never use words that belong to a different style.\n"
+            if style_in_items else "  Item captions must not name any style or medium.\n")
+        mono_rule = (
+            "  The locked style has NO color. Never use a color word in any caption. Describe tone and value instead: "
+            "black, white, light gray, dark gray, shadowed, highlighted, high-contrast.\n" if mono else "")
+        style_rule = (
+            f'- STYLE LOCK: the final image will be generated ONLY in this style: "{meta_tags}". If the user\'s prompt '
+            "asks for a different style or medium, ignore that part and use the locked style.\n"
+            "  The overall caption must open with a phrase that uses these exact style words, then describe the scene.\n"
+            f"{item_clause}{mono_rule}")
+        summary_hint = (f"one or two sentences describing the whole scene, composition, {color_word} and lighting, "
+                        "opening with the locked style words")
+    else:
+        style_rule = ("- The overall caption states the style or medium the user's prompt asks for (if it names one), "
+                      "then describes the scene. Item captions never name a style or medium.\n")
+        summary_hint = ("one or two sentences describing the whole scene, composition, colors and lighting, including "
+                        "any style or medium the prompt asks for")
+
+    if depth != "off":
+        layer_field = '      "layer": 1,\n'
+        layer_rule = ("- layer: an integer depth order for every item. 1 = farthest from the camera (sky, backdrop, "
+                      "ground, walls); higher numbers are closer to the camera. Elements that overlap must have "
+                      "different layers so it is clear which is in front. In each caption say what the element is in "
+                      "front of or behind.\n")
+    else:
+        layer_field, layer_rule = "", ""
+
+    extra = (f"\nEXTRA INSTRUCTIONS FROM THE USER (apply them to the plan):\n{changes.strip()}\n"
+             if changes.strip() else "")
+    must = ("\nMake sure these elements are included:\n" + "\n".join(f"- {t}" for t in targets) + "\n"
+            if targets else "")
+
+    ex_items = [
+        ("A wide sky filling the upper half, glowing near the horizon.", [0, 0, 1000, 540], 1),
+        ("A grassy hill filling the lower half, behind and below both figures.", [0, 500, 1000, 1000], 2),
+        ("A horse standing at the right, side view facing left, in front of the hill.", [520, 330, 940, 890], 3),
+        ("A knight in plate armor standing at the left facing right, helmet under his arm, in front of the hill.",
+         [170, 250, 450, 890], 3),
+    ]
+    example = {"caption": "A knight beside his horse on a hill at sunrise.", "items": [
+        {"label": "object", "caption": c, **({"layer": l} if depth != "off" else {}), "bbox_2d": b}
+        for c, b, l in ex_items]}
+    ex_json = json.dumps(example, ensure_ascii=False)
+    shape = f"{H / W:.2f}"
+    ar = f"{W / H:.2f}:1"
+
+    return f"""You are an expert art director and layout planner for a text-to-image model that is guided by bounding boxes.
+Turn the user's prompt into a complete, well-composed layout for a {W}x{H} canvas (width {W}, height {H}, aspect ratio {ar}).
+{extra}
+USER'S PROMPT:
+-----
+{user_prompt.strip()}
+-----
+{must}
+How to plan:
+1. List every subject, character, object and background region the prompt mentions, and add the supporting elements the scene naturally implies (ground, sky, walls, furniture, props). Use as many elements as the scene needs, at most {max_items}; a simple prompt needs only a handful. Do not add unrelated things.
+2. Compose the canvas well: the main subject is prominent and not cut off, space is balanced, scale relationships are sensible (a person is much smaller than a house, a hand is smaller than its arm), parts sit inside their wholes (a head at the top of its body box, a hat on the head), and background regions cover the area behind everything.
+3. Give every element a bounding box [x1, y1, x2, y2] in normalized 0-1000 coordinates: origin at the top-left, x to the right, y downward, 0-1000 on both axes whatever the canvas size. x comes FIRST. Keep x1 < x2, y1 < y2, and everything inside 0-1000.
+4. Mind the canvas shape: one unit of x is {W / 1000:.2f} px and one unit of y is {H / 1000:.2f} px. A box with equal x and y extents is not square unless the canvas is square; something that should look square needs an x extent of about {shape} times its y extent.
+5. Boxes overlap only where things really overlap or contain each other (a person in front of a background, a hat on a head).
+
+Return exactly one JSON object and nothing else:
+{{
+  "caption": "{summary_hint}",
+  "items": [
+    {{
+      {label_line}
+      "caption": "detailed description of this element: 2-4 sentences covering appearance, {color_word}, materials, clothing, pose or orientation, expression, and its spatial relationships (what it is in front of, behind, holding, inside or touching)",
+{text_field}{layer_field}      "bbox_2d": [x1, y1, x2, y2]
+    }}
+  ]
+}}
+
+Rules:
+- Captions are specific and detailed: for people include clothing, hair, expression, pose, facing direction and where hands and feet are; for objects include material, {color_one}, shape, size and state.
+{layer_rule}{text_rule}- Write captions in English.
+{style_rule}- Output JSON only, no Markdown, no explanation.
+
+Format example only (it shows how boxes relate to a scene on a SQUARE canvas; never reuse its content), for the prompt "a knight standing beside his horse on a hill at sunrise":
+{ex_json}"""
+
+
+def _blank_canvas(W, H):
+    """Neutral canvas with a rule-of-thirds grid, used as the preview background in prompt mode."""
+    base = Image.new("RGB", (W, H), (38, 40, 48))
+    d = ImageDraw.Draw(base)
+    for k in (1, 2):
+        d.line([(W * k / 3, 0), (W * k / 3, H)], fill=(70, 74, 86), width=max(1, min(W, H) // 400))
+        d.line([(0, H * k / 3), (W, H * k / 3)], fill=(70, 74, 86), width=max(1, min(W, H) // 400))
+    return base
+
+
 class MOSSLayoutFromQwenVL:
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "image": ("IMAGE",),
-                "width": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
-                                  "tooltip": "Target MOSS canvas width. 0 = use the image's width (rounded to 16)."}),
-                "height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
-                                   "tooltip": "Target MOSS canvas height. 0 = use the image's height (rounded to 16)."}),
-                "targets": ("STRING", {"multiline": True, "default": "person",
-                                       "tooltip": "One thing to detect per line. Ignored/optional extras when smart_mode is on. For text, say so explicitly, e.g. 'title text EXPLORE'. Text is only handled when you ask for it."}),
+                "mode": ([MODE_IMAGE, MODE_PROMPT], {"default": MODE_IMAGE,
+                         "tooltip": "From image: detect and caption a reference image. From prompt (experimental): no image, Qwen designs the whole box layout from your prompt."}),
+                "prompt": ("STRING", {"multiline": True, "default": "",
+                                      "tooltip": "Prompt mode only: describe the image you want. Qwen turns it into a full box layout."}),
                 "meta": ("STRING", {"default": "photo",
-                                    "tooltip": "Style lock. Comma-separated tags, e.g. photo, poster. The overall caption is built around them (added if Qwen forgets) and words from other styles are stripped from all captions."}),
+                                    "tooltip": "Style lock. Comma-separated tags, e.g. photo, poster. The overall caption is built around them (added if Qwen forgets) and words from other styles are stripped from all captions. In prompt mode, leave empty to take the style from your prompt."}),
+                "targets": ("STRING", {"multiline": True, "default": "person",
+                                       "tooltip": "Image mode: one thing to detect per line (extra when smart_mode is on). Prompt mode: elements that must be included. For text, say so explicitly, e.g. 'title text EXPLORE'."}),
+                "megapixels": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 16.0, "step": 0.01,
+                                         "tooltip": "Image mode: the image is scaled to this many total megapixels (0 = keep original size). Prompt mode: size of the canvas."}),
+                "resolution_steps": ("INT", {"default": 16, "min": 1, "max": 256,
+                                             "tooltip": "Width and height are snapped to a multiple of this. MOSS needs multiples of 16."}),
+                "upscale_method": (UPSCALE_METHODS, {"default": "lanczos", "tooltip": "Image mode: resampling used to scale the image."}),
+                "width": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
+                                  "tooltip": "0 = automatic. Set both width and height to force a canvas size instead (rounded to 16)."}),
+                "height": ("INT", {"default": 0, "min": 0, "max": 8192, "step": 16,
+                                   "tooltip": "0 = automatic. Set both width and height to force a canvas size instead (rounded to 16)."}),
                 "coord_mode": (["normalized_0_1000", "absolute_pixels"],
                                {"default": "normalized_0_1000",
-                                "tooltip": "Qwen3-VL/3.5 use normalized 0-1000. Use absolute_pixels for Qwen2.5-VL style models."}),
+                                "tooltip": "Qwen3-VL/3.5 use normalized 0-1000. Use absolute_pixels for Qwen2.5-VL style models. Ignored in prompt mode."}),
                 "max_new_tokens": ("INT", {"default": 4096, "min": 256, "max": 16384, "step": 64}),
                 "temperature": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 2.0, "step": 0.05}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xFFFFFFFFFFFFFFFF}),
             },
             "optional": {
+                "image": ("IMAGE", {"tooltip": "Reference image (image mode)."}),
+                "aspect_ratio": (ASPECT_RATIOS, {"default": "1:1",
+                                                 "tooltip": "Prompt mode: canvas shape. Combined with megapixels and resolution_steps (or set width and height)."}),
                 "clip": ("CLIP", {"tooltip": "Qwen3-VL / Qwen3.5-VL loaded as a text encoder. If unconnected, hf_model is used."}),
                 "hf_model": ("STRING", {"default": "Qwen/Qwen3-VL-8B-Instruct",
                                         "tooltip": "HF repo id or local folder. Used only when clip is not connected."}),
                 "keep_loaded": ("BOOLEAN", {"default": False,
                                             "tooltip": "HF path only: keep Qwen in memory after running."}),
                 "change_request": ("STRING", {"multiline": True, "default": "",
-                                              "tooltip": "Describe edits to make, one per line. E.g. 'make the dress red', 'replace the man with an elderly woman in a grey coat', 'add a dog on the left', 'change the sign text to OPEN'. Leave empty to just describe the image."}),
+                                              "tooltip": "Image mode: edits to make, one per line (e.g. 'make the dress red', 'add a dog on the left'). Prompt mode: extra instructions for the layout."}),
                 "box_padding": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 25.0, "step": 0.5,
-                                          "tooltip": "Grow every box by this % of its size on each side (clamped to the canvas). Extra safety on top of Qwen estimating hidden/occluded parts."}),
+                                          "tooltip": "Grow every box by this % of its size on each side (clamped to the canvas)."}),
                 "smart_mode": ("BOOLEAN", {"default": False,
-                                           "tooltip": "Qwen decides what to detect by itself: people and their body parts, clothing, objects and background regions, to match the reference layout as closely as possible. Anything in targets is still included."}),
+                                           "tooltip": "Image mode: Qwen decides what to detect by itself (people and their body parts, clothing, objects, background regions). Anything in targets is still included."}),
                 "max_items": ("INT", {"default": 40, "min": 5, "max": 120, "step": 1,
-                                      "tooltip": "Smart mode only: maximum number of regions Qwen may return."}),
+                                      "tooltip": "Smart mode and prompt mode: maximum number of regions Qwen may return."}),
                 "style_in_items": ("BOOLEAN", {"default": True,
-                                               "tooltip": "Every item caption must carry the meta style (Qwen is asked to, and 'Rendered as <meta>.' is added if it doesn't). Turn off to keep style only in the overall caption."}),
+                                               "tooltip": "Every item caption must carry the meta style ('Rendered as <meta>.' is added if it doesn't). Turn off to keep style only in the overall caption."}),
+                "depth_order": (DEPTH_MODES, {"default": "back to front",
+                                              "tooltip": "Qwen assigns each item a depth layer, captions say what is in front of or behind what, and items are sorted by it. 'off' keeps Qwen's own order."}),
+                "enable_thinking": ("BOOLEAN", {"default": False,
+                                                "tooltip": "Let Qwen reason before answering. Can be more accurate, but the reasoning uses up max_new_tokens and can cut the JSON off. Keep off for smart mode."}),
             },
         }
 
-    RETURN_TYPES = ("STRING", "IMAGE", "STRING", "INT", "INT")
-    RETURN_NAMES = ("prompt", "preview", "raw_qwen_output", "width", "height")
+    RETURN_TYPES = ("STRING", "IMAGE", "STRING", "INT", "INT", "IMAGE")
+    RETURN_NAMES = ("prompt", "preview", "raw_qwen_output", "width", "height", "scaled_image")
     FUNCTION = "run"
     CATEGORY = "MOSS-Image"
 
-    def run(self, image, width, height, targets, meta, coord_mode,
-            max_new_tokens, temperature, seed, clip=None, hf_model="", keep_loaded=False,
-            change_request="", box_padding=0.0, smart_mode=False, max_items=40, style_in_items=True):
-        pil = _tensor_to_pil(image)
-        iw, ih = pil.size
-        W = _round16(width if width > 0 else iw)
-        H = _round16(height if height > 0 else ih)
+    def run(self, mode, prompt, meta, targets, megapixels, resolution_steps, upscale_method, width, height,
+            coord_mode, max_new_tokens, temperature, seed, image=None, aspect_ratio="1:1", clip=None,
+            hf_model="", keep_loaded=False, change_request="", box_padding=0.0, smart_mode=False,
+            max_items=40, style_in_items=True, depth_order="back to front", enable_thinking=False):
+        text_mode = mode == MODE_PROMPT
+        size_note = ""
 
-        target_list = [t.strip() for t in targets.splitlines() if t.strip()]
-        text_ok = _wants_text(targets, change_request)
-        prompt = _build_qwen_prompt(target_list, W, H, iw, ih, coord_mode,
-                                    change_request, meta, smart_mode, max_items, text_ok, style_in_items)
-
-        if clip is not None:
-            raw = _generate_with_clip(clip, pil, prompt, max_new_tokens, temperature, seed)
+        # ---- canvas + (image mode) the scaled reference image ----
+        if text_mode:
+            if not prompt.strip():
+                raise ValueError("Prompt mode needs text in the prompt box.")
+            if width > 0 and height > 0:
+                W, H = _round16(width), _round16(height)
+            else:
+                W, H = _size_from_aspect(aspect_ratio, megapixels, resolution_steps)
+            pil, iw, ih, scaled = None, W, H, None
+            coord_eff = "normalized_0_1000"
+            if width > 0 and height > 0:
+                size_note = f"canvas {W}x{H} (forced)"
+            else:
+                size_note = f"canvas {W}x{H} ({aspect_ratio}, {megapixels:g} MP)"
         else:
-            if not hf_model.strip():
-                raise ValueError("Connect a CLIP (Qwen VL) or provide hf_model.")
-            raw = _generate_with_hf(hf_model.strip(), pil, prompt, max_new_tokens,
-                                    temperature, seed, keep_loaded)
+            if image is None:
+                raise ValueError("Connect an image, or switch mode to 'From prompt (experimental)'.")
+            scaled, sw, sh = _scale_image(image, megapixels, resolution_steps, upscale_method)
+            pil = _tensor_to_pil(scaled)
+            iw, ih = pil.size
+            W = _round16(width) if width > 0 else sw
+            H = _round16(height) if height > 0 else sh
+            coord_eff = coord_mode
+            size_note = (f"image scaled to {sw}x{sh} ({megapixels:g} MP, steps {resolution_steps}, {upscale_method})"
+                         if megapixels > 0 else f"image kept at {sw}x{sh} (snapped to steps of {resolution_steps})")
+            if (W, H) != (sw, sh):
+                size_note += f"; canvas forced to {W}x{H}"
+        if W % 16 or H % 16:
+            size_note += " | WARNING: MOSS needs multiples of 16, set resolution_steps to 16"
 
-        data = _extract_json(raw)
-        if isinstance(data, list):
-            data = {"caption": "", "items": data}
-        if not isinstance(data, dict):
-            raise RuntimeError("Could not parse JSON from Qwen output. See raw_qwen_output:\n" + raw[:1500])
+        # ---- instructions for Qwen ----
+        target_list = [t.strip() for t in targets.splitlines() if t.strip()]
+        text_ok = _wants_text(prompt if text_mode else "", targets, change_request)
+        if text_mode:
+            q_prompt = _build_layout_prompt_text(prompt, W, H, target_list, change_request, meta, max_items,
+                                                 text_ok, style_in_items, depth_order)
+        else:
+            q_prompt = _build_qwen_prompt(target_list, W, H, iw, ih, coord_eff, change_request, meta,
+                                          smart_mode, max_items, text_ok, style_in_items, depth_order)
 
+        model_id = hf_model.strip()
+        if clip is None and not model_id:
+            raise ValueError("Connect a CLIP (Qwen VL) or provide hf_model.")
+
+        eff_tokens = max_new_tokens
+        if smart_mode or text_mode:          # many items need many tokens: max_new_tokens is a floor here
+            eff_tokens = min(16384, max(max_new_tokens, 600 + int(max_items) * 140))
+        state = {"cut": False}
+
+        def ask(p, keep):
+            if clip is not None:
+                out = _generate_with_clip(clip, pil, p, eff_tokens, temperature, seed, enable_thinking)
+            else:
+                out = _generate_with_hf(model_id, pil, p, eff_tokens, temperature, seed, keep, enable_thinking)
+            d = _extract_json(out)
+            if isinstance(d, list):
+                d = {"caption": "", "items": d}
+            if isinstance(d, dict) and d.pop("_salvaged", False):
+                state["cut"] = True
+            return out, (d if isinstance(d, dict) else None)
+
+        raw, data = ask(q_prompt, keep_loaded)
+        if data is None:
+            hint = ("\nQwen ran out of tokens while still thinking. Turn enable_thinking off or raise max_new_tokens."
+                    if "<think>" in raw and "</think>" not in raw else "")
+            raise RuntimeError("Could not parse JSON from Qwen output." + hint + " See raw_qwen_output:\n" + raw[:1500])
+
+        # ---- clean up and convert ----
         tags = _meta_tags(meta)
-        item_alt, summ_alt = _style_patterns(tags)
+        style_free = text_mode and not tags      # prompt mode with no meta: the prompt's own style is allowed
+        item_alt, summ_alt = (None, None) if style_free else _style_patterns(tags)
         removed = []
         mono = _is_mono(tags)
         recolored = 0
         items_styled = 0
 
-        items_out = []
+        rows = []
         for it in data.get("items", []) or []:
             if not isinstance(it, dict):
                 continue
             bb = it.get("bbox_2d") or it.get("bbox")
-            moss_bb = _to_moss_bbox(bb, W, H, iw, ih, coord_mode, box_padding) if bb else None
+            moss_bb = _to_moss_bbox(bb, W, H, iw, ih, coord_eff, box_padding) if bb else None
             if moss_bb is None:
                 continue
             label = "text" if str(it.get("label", "object")).lower() == "text" else "object"
@@ -628,7 +922,21 @@ class MOSSLayoutFromQwenVL:
             if label == "text":
                 entry["text"] = str(it.get("text", ""))
             entry["bbox"] = moss_bb
-            items_out.append(entry)
+            try:
+                layer = int(float(it.get("layer")))
+            except (TypeError, ValueError):
+                layer = None
+            rows.append((layer, len(rows), entry))
+
+        # depth ordering: sort by the layer Qwen assigned (items without one go to the front)
+        order_note = ""
+        if depth_order != "off" and rows:
+            known = [l for l, _, _ in rows if l is not None]
+            default = (max(known) + 1) if known else 0
+            sign = 1 if depth_order == "back to front" else -1
+            rows.sort(key=lambda r: (sign * (r[0] if r[0] is not None else default), r[1]))
+            order_note = f" | items ordered {depth_order}" + ("" if known else " (Qwen gave no layers, order kept)")
+        items_out = [e for _, _, e in rows]
 
         summary = (_strip_text_mentions(str(data.get("caption", "")))
                    if not text_ok else str(data.get("caption", "")).strip())
@@ -651,20 +959,35 @@ class MOSSLayoutFromQwenVL:
         }
         out_prompt = json.dumps(layout, ensure_ascii=False, indent=2)
 
-        # Preview: draw the converted boxes back onto the canvas to sanity-check them.
-        prev = pil.resize((W, H), Image.LANCZOS)
+        # ---- preview ----
+        if text_mode:
+            prev = _blank_canvas(W, H)
+            scaled_out = _pil_to_tensor(prev)          # blank canvas of the right size
+        else:
+            prev = pil.resize((W, H), Image.LANCZOS)
+            scaled_out = scaled
         _draw_preview(prev, items_out, W, H)
 
-        meta_note = f"\n\n[meta] locked: {', '.join(tags) or '(none)'}"
+        meta_note = f"\n\n[size] {size_note}\n[meta] locked: {', '.join(tags) or '(none)'}"
+        if style_free:
+            meta_note = meta_note.replace("locked: (none)", "none (style taken from your prompt)")
         if removed:
             meta_note += " | removed conflicting style words: " + ", ".join(sorted(set(removed)))
+        if state["cut"]:
+            meta_note += (f" | WARNING: Qwen's answer was cut off at {eff_tokens} tokens; {len(items_out)} complete "
+                          "item(s) were recovered. Raise max_new_tokens, lower max_items, or keep enable_thinking off")
+        if not items_out:
+            meta_note += (" | WARNING: no boxes were produced. " +
+                          ("Try a more detailed prompt or raise max_new_tokens" if text_mode
+                           else "Check targets / smart_mode, or raise max_new_tokens"))
         if recolored:
             meta_note += f" | no-color style: {recolored} color word(s) converted to gray tones"
         if items_styled:
             meta_note += f" | style clause added to {items_styled} item caption(s)"
         if added:
             meta_note += " | overall caption did not state the style, so it was added"
-        return (out_prompt, _pil_to_tensor(prev), raw + meta_note, W, H)
+        meta_note += order_note
+        return (out_prompt, _pil_to_tensor(prev), raw + meta_note, W, H, scaled_out)
 
 
 NODE_CLASS_MAPPINGS = {"MOSSLayoutFromQwenVL": MOSSLayoutFromQwenVL}

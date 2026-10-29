@@ -1,0 +1,1534 @@
+{
+  "id": "10f20c66-473f-4d9e-90d2-e52d647e66ca",
+  "revision": 0,
+  "last_node_id": 531,
+  "last_link_id": 830,
+  "nodes": [
+    {
+      "id": 20,
+      "type": "SaveImage",
+      "pos": [
+        1100.5655981051361,
+        637.175871323281
+      ],
+      "size": [
+        848.8664503720553,
+        955.3157225807955
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 781
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.0",
+        "Node name for S&R": "SaveImage",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.8"
+        }
+      },
+      "widgets_values": [
+        "moss_image/post/21"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "moss_image/post/21"
+      }
+    },
+    {
+      "id": 259,
+      "type": "LoadImage",
+      "pos": [
+        -210.22722905188016,
+        588.5507692566234
+      ],
+      "size": [
+        414.020515069616,
+        447.4682270146618
+      ],
+      "flags": {
+        "collapsed": false
+      },
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            824
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.0",
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "4769_by_lgmac_dn682qb-pre.jpg",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "4769_by_lgmac_dn682qb-pre.jpg",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 267,
+      "type": "PixaromaRunTimer",
+      "pos": [
+        803.8250178625251,
+        1412.5175394553253
+      ],
+      "size": [
+        141,
+        50
+      ],
+      "flags": {
+        "no_title": true
+      },
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "aux_id": "pixaroma/ComfyUI-Pixaroma",
+        "ver": "7267fdcbf38234d93072d411d637221e28e68350",
+        "Node name for S&R": "PixaromaRunTimer",
+        "runTimerLastMs": 42879.10000002384
+      },
+      "color": "#1d1d1d",
+      "bgcolor": "#2a2a2a"
+    },
+    {
+      "id": 516,
+      "type": "a234d680-9347-4256-b286-1518bf1301d5",
+      "pos": [
+        697.8120571182229,
+        657.0569710135746
+      ],
+      "size": [
+        384.83092767898506,
+        280
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "text",
+          "type": "STRING",
+          "widget": {
+            "name": "text"
+          },
+          "link": 826
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "widget": {
+            "name": "width"
+          },
+          "link": 829
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "widget": {
+            "name": "height"
+          },
+          "link": 830
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            781,
+            823
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.0",
+        "previewExposures": [
+          {
+            "name": "$$canvas-image-preview",
+            "sourceNodeId": "22_17",
+            "sourcePreviewName": "$$canvas-image-preview"
+          }
+        ]
+      },
+      "widgets_values": [
+        "",
+        "moss_image_sft_int8_convrot.safetensors",
+        "qwen3.5_9b_int8_convrot.safetensors",
+        "Moss\\MOSS-Image-SFT-8-steps-dmd.safetensors",
+        1,
+        8,
+        1,
+        1536,
+        1024
+      ],
+      "widgets_values_named": {
+        "text": "",
+        "unet_name": "moss_image_sft_int8_convrot.safetensors",
+        "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+        "lora_name": "Moss\\MOSS-Image-SFT-8-steps-dmd.safetensors",
+        "strength_model": 1,
+        "steps": 8,
+        "cfg": 1,
+        "width": 1536,
+        "height": 1024
+      }
+    },
+    {
+      "id": 524,
+      "type": "CLIPLoader",
+      "pos": [
+        -52.124536786717265,
+        1080.3933668041664
+      ],
+      "size": [
+        270,
+        106
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            825
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.42.0",
+        "Node name for S&R": "CLIPLoader"
+      },
+      "widgets_values": [
+        "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
+        "stable_diffusion",
+        "default"
+      ],
+      "widgets_values_named": {
+        "clip_name": "Qwen3.5-9B-abliterated_int8_convrot.safetensors",
+        "type": "stable_diffusion",
+        "device": "default"
+      }
+    },
+    {
+      "id": 525,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        1965.2318811235084,
+        644.5871644204716
+      ],
+      "size": [
+        781.1171591414194,
+        921.8116655816289
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "image_a",
+          "type": "IMAGE",
+          "link": 828
+        },
+        {
+          "dir": 3,
+          "name": "image_b",
+          "type": "IMAGE",
+          "link": 823
+        }
+      ],
+      "outputs": [
+        {
+          "dir": 4,
+          "name": "images",
+          "shape": 3,
+          "type": "IMAGE",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "d7297b42f0fa78bec1c0411478f887423c249502",
+        "comparer_mode": "Slide"
+      },
+      "widgets_values": [
+        [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_gtrji_00015_.png&type=temp&subfolder=&rand=0.8679851584090811"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_gtrji_00016_.png&type=temp&subfolder=&rand=0.7559735162028421"
+          }
+        ]
+      ],
+      "widgets_values_named": {
+        "rgthree_comparer": {
+          "images": [
+            {
+              "name": "A",
+              "selected": true,
+              "url": "/api/view?filename=rgthree.compare._temp_gtrji_00015_.png&type=temp&subfolder=&rand=0.8679851584090811",
+              "img": {}
+            },
+            {
+              "name": "B",
+              "selected": true,
+              "url": "/api/view?filename=rgthree.compare._temp_gtrji_00016_.png&type=temp&subfolder=&rand=0.7559735162028421",
+              "img": {}
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 527,
+      "type": "easy showAnything",
+      "pos": [
+        698.1133864288864,
+        993.2648379696881
+      ],
+      "size": [
+        388.2918204248085,
+        380.8385019864122
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "anything",
+          "shape": 7,
+          "type": "*",
+          "link": 827
+        }
+      ],
+      "outputs": [
+        {
+          "name": "output",
+          "type": "*",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-easy-use",
+        "ver": "b0b47ca1372117fce575d9e744655344ebff6bef",
+        "Node name for S&R": "easy showAnything"
+      },
+      "widgets_values": [
+        "{\n  \"summary\": {\n    \"meta\": [\n      \"real life photography\"\n    ],\n    \"canvas\": \"single\",\n    \"caption\": \"A real life photography style close-up of a whimsical, stitched scarecrow-like creature with large, expressive eyes, resting its hands on a pumpkin. The scene is with high-definition realism, capturing the texture of the creature's skin, the fabric of its hat, and the organic details of the pumpkin against a moody, atmospheric background.\"\n  },\n  \"items\": [\n    {\n      \"label\": \"object\",\n      \"caption\": \"Dark, twisted tree branches and foliage forming a spooky, atmospheric background. The leaves are sparse and shadowy, creating a sense of depth and mystery. It is positioned behind the creature, filling the upper and side portions of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -968,\n        544,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A central, anthropomorphic scarecrow figure with pale, stitched skin and large, bulging turquoise eyes. It has messy, dark hair and wears a tattered, striped hat. The creature is leaning forward, resting its hands on a pumpkin in the foreground, with its head and upper torso dominating the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -533,\n        -929,\n        511,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A faint, glowing pumpkin visible in the lower left background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower left corner, behind the creature's left arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        -968,\n        435,\n        -736\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Another faint, glowing pumpkin visible in the lower right background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower right corner, behind the creature's right arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        736,\n        435,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The face is pale and textured like stitched fabric, featuring a wide, toothless grin formed by black thread. It has large, round eyes with bright turquoise irises and dilated pupils, giving an intense, staring expression. The face is positioned centrally, slightly tilted downwards. Rendered as real life photography.\",\n      \"bbox\": [\n        -326,\n        -465,\n        381,\n        426\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A tall, floppy hat made of rough, patchwork fabric in shades of orange and teal. It features a wide brim and a pointed top, with visible stitching details along the rim. The hat sits atop the creature's head, slightly askew. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -939,\n        54,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the left side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the left side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -22,\n        -620,\n        131,\n        -465\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the right side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the right side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -196,\n        407,\n        22,\n        561\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Messy, dark, spiky hair framing the creature's face and extending outwards. It appears coarse and slightly unkempt, blending with the texture of the hat. The hair is positioned around the head, with strands falling over the forehead and ears. Rendered as real life photography.\",\n      \"bbox\": [\n        -528,\n        -910,\n        272,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pale, skeletal hand with long, thin fingers resting on the pumpkin. The fingers are slightly curled, showing detailed knuckles and fingernails. It is positioned on the left side of the pumpkin, supporting the creature's weight. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        -503,\n        517,\n        -19\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A matching pale, skeletal hand resting on the pumpkin to the right of the left hand. The fingers are spread slightly, mirroring the pose of the other hand. It is positioned on the right side of the pumpkin, completing the resting pose. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        39,\n        511,\n        523\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The left arm extends from the creature's shoulder, covered in a rough, striped fabric sleeve in orange and teal. The arm ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower left portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        196,\n        -823,\n        490,\n        -387\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The right arm extends from the creature's shoulder, mirroring the left arm with a matching striped fabric sleeve. It ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower right portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        174,\n        290,\n        490,\n        842\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A large, orange pumpkin with a ribbed texture, serving as a base for the creature's hands. It is positioned in the lower foreground, partially cut off by the bottom edge of the frame. The pumpkin's surface shows natural imperfections and a warm, glowing hue. Rendered as real life photography.\",\n      \"bbox\": [\n        359,\n        -784,\n        544,\n        803\n      ]\n    }\n  ],\n  \"bbox_coord_space\": \"abs_centralized\",\n  \"bbox_format\": \"yxyx\"\n}"
+      ],
+      "widgets_values_named": {
+        "text": "{\n  \"summary\": {\n    \"meta\": [\n      \"real life photography\"\n    ],\n    \"canvas\": \"single\",\n    \"caption\": \"A real life photography style close-up of a whimsical, stitched scarecrow-like creature with large, expressive eyes, resting its hands on a pumpkin. The scene is with high-definition realism, capturing the texture of the creature's skin, the fabric of its hat, and the organic details of the pumpkin against a moody, atmospheric background.\"\n  },\n  \"items\": [\n    {\n      \"label\": \"object\",\n      \"caption\": \"Dark, twisted tree branches and foliage forming a spooky, atmospheric background. The leaves are sparse and shadowy, creating a sense of depth and mystery. It is positioned behind the creature, filling the upper and side portions of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -968,\n        544,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A central, anthropomorphic scarecrow figure with pale, stitched skin and large, bulging turquoise eyes. It has messy, dark hair and wears a tattered, striped hat. The creature is leaning forward, resting its hands on a pumpkin in the foreground, with its head and upper torso dominating the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        -533,\n        -929,\n        511,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A faint, glowing pumpkin visible in the lower left background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower left corner, behind the creature's left arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        -968,\n        435,\n        -736\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Another faint, glowing pumpkin visible in the lower right background, emitting a warm, orange light. It is partially obscured by the foreground elements and appears to be part of the distant scenery. It is positioned in the lower right corner, behind the creature's right arm. Rendered as real life photography.\",\n      \"bbox\": [\n        163,\n        736,\n        435,\n        968\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The face is pale and textured like stitched fabric, featuring a wide, toothless grin formed by black thread. It has large, round eyes with bright turquoise irises and dilated pupils, giving an intense, staring expression. The face is positioned centrally, slightly tilted downwards. Rendered as real life photography.\",\n      \"bbox\": [\n        -326,\n        -465,\n        381,\n        426\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A tall, floppy hat made of rough, patchwork fabric in shades of orange and teal. It features a wide brim and a pointed top, with visible stitching details along the rim. The hat sits atop the creature's head, slightly askew. Rendered as real life photography.\",\n      \"bbox\": [\n        -544,\n        -939,\n        54,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the left side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the left side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -22,\n        -620,\n        131,\n        -465\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pointed, elf-like ear visible on the right side of the creature's head, peeking out from under the hat and hair. It is pale and textured, matching the rest of the face. It is positioned on the right side of the head, slightly behind the hair. Rendered as real life photography.\",\n      \"bbox\": [\n        -196,\n        407,\n        22,\n        561\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"Messy, dark, spiky hair framing the creature's face and extending outwards. It appears coarse and slightly unkempt, blending with the texture of the hat. The hair is positioned around the head, with strands falling over the forehead and ears. Rendered as real life photography.\",\n      \"bbox\": [\n        -528,\n        -910,\n        272,\n        929\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A pale, skeletal hand with long, thin fingers resting on the pumpkin. The fingers are slightly curled, showing detailed knuckles and fingernails. It is positioned on the left side of the pumpkin, supporting the creature's weight. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        -503,\n        517,\n        -19\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A matching pale, skeletal hand resting on the pumpkin to the right of the left hand. The fingers are spread slightly, mirroring the pose of the other hand. It is positioned on the right side of the pumpkin, completing the resting pose. Rendered as real life photography.\",\n      \"bbox\": [\n        283,\n        39,\n        511,\n        523\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The left arm extends from the creature's shoulder, covered in a rough, striped fabric sleeve in orange and teal. The arm ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower left portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        196,\n        -823,\n        490,\n        -387\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"The right arm extends from the creature's shoulder, mirroring the left arm with a matching striped fabric sleeve. It ends in the skeletal hand resting on the pumpkin. It is positioned diagonally across the lower right portion of the frame. Rendered as real life photography.\",\n      \"bbox\": [\n        174,\n        290,\n        490,\n        842\n      ]\n    },\n    {\n      \"label\": \"object\",\n      \"caption\": \"A large, orange pumpkin with a ribbed texture, serving as a base for the creature's hands. It is positioned in the lower foreground, partially cut off by the bottom edge of the frame. The pumpkin's surface shows natural imperfections and a warm, glowing hue. Rendered as real life photography.\",\n      \"bbox\": [\n        359,\n        -784,\n        544,\n        803\n      ]\n    }\n  ],\n  \"bbox_coord_space\": \"abs_centralized\",\n  \"bbox_format\": \"yxyx\"\n}"
+      }
+    },
+    {
+      "id": 528,
+      "type": "MOSSLayoutFromQwenVL",
+      "pos": [
+        230.07754313647314,
+        589.3792115816334
+      ],
+      "size": [
+        459.2147020009984,
+        1064.0838817887402
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 824
+        },
+        {
+          "name": "clip",
+          "shape": 7,
+          "type": "CLIP",
+          "link": 825
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prompt",
+          "type": "STRING",
+          "links": [
+            826,
+            827
+          ]
+        },
+        {
+          "name": "preview",
+          "type": "IMAGE",
+          "links": [
+            828
+          ]
+        },
+        {
+          "name": "raw_qwen_output",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            829
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            830
+          ]
+        },
+        {
+          "name": "scaled_image",
+          "type": "IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-moss-qwenvl-layout",
+        "ver": "fe70628f4cdb348c359fd98096e306c013319642",
+        "Node name for S&R": "MOSSLayoutFromQwenVL"
+      },
+      "widgets_values": [
+        "From image",
+        "",
+        "real life photography",
+        "",
+        2,
+        16,
+        "lanczos",
+        0,
+        0,
+        "normalized_0_1000",
+        4096,
+        0.2,
+        1072171598668056,
+        "randomize",
+        "4:3",
+        "Qwen/Qwen3-VL-8B-Instruct",
+        false,
+        "",
+        0,
+        true,
+        40,
+        true,
+        "back to front",
+        false
+      ],
+      "widgets_values_named": {
+        "mode": "From image",
+        "prompt": "",
+        "meta": "real life photography",
+        "targets": "",
+        "megapixels": 2,
+        "resolution_steps": 16,
+        "upscale_method": "lanczos",
+        "width": 0,
+        "height": 0,
+        "coord_mode": "normalized_0_1000",
+        "max_new_tokens": 4096,
+        "temperature": 0.2,
+        "seed": 1072171598668056,
+        "control_after_generate": "randomize",
+        "aspect_ratio": "4:3",
+        "hf_model": "Qwen/Qwen3-VL-8B-Instruct",
+        "keep_loaded": false,
+        "change_request": "",
+        "box_padding": 0,
+        "smart_mode": true,
+        "max_items": 40,
+        "style_in_items": true,
+        "depth_order": "back to front",
+        "enable_thinking": false
+      }
+    },
+    {
+      "id": 531,
+      "type": "MarkdownNote",
+      "pos": [
+        -358.7224794732922,
+        1244.768426895613
+      ],
+      "size": [
+        563.8727302487981,
+        249.1467142983829
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": [
+        "**turbo lora**\n- [MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/resolve/main/lora.safetensors)\n\n**text_encoder**\n\n- [Qwen3.5-9B-abliterated_int8_convrot.safetensors](https://huggingface.co/beycanai/Qwen-LM/resolve/main/Qwen3.5-9B-abliterated_int8_convrot.safetensors)"
+      ],
+      "widgets_values_named": {
+        "text": "**turbo lora**\n- [MOSS-Image-SFT-8-steps-dmd](https://huggingface.co/lodestones/MOSS-Image-SFT-8-steps-dmd/resolve/main/lora.safetensors)\n\n**text_encoder**\n\n- [Qwen3.5-9B-abliterated_int8_convrot.safetensors](https://huggingface.co/beycanai/Qwen-LM/resolve/main/Qwen3.5-9B-abliterated_int8_convrot.safetensors)"
+      },
+      "color": "#222",
+      "bgcolor": "#000"
+    }
+  ],
+  "links": [
+    [
+      781,
+      516,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      823,
+      516,
+      0,
+      525,
+      1,
+      "IMAGE"
+    ],
+    [
+      824,
+      259,
+      0,
+      528,
+      0,
+      "IMAGE"
+    ],
+    [
+      825,
+      524,
+      0,
+      528,
+      1,
+      "CLIP"
+    ],
+    [
+      826,
+      528,
+      0,
+      516,
+      0,
+      "STRING"
+    ],
+    [
+      827,
+      528,
+      0,
+      527,
+      0,
+      "STRING"
+    ],
+    [
+      828,
+      528,
+      1,
+      525,
+      0,
+      "IMAGE"
+    ],
+    [
+      829,
+      528,
+      3,
+      516,
+      1,
+      "INT"
+    ],
+    [
+      830,
+      528,
+      4,
+      516,
+      2,
+      "INT"
+    ]
+  ],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "a234d680-9347-4256-b286-1518bf1301d5",
+        "version": 1,
+        "state": {
+          "lastGroupId": 40,
+          "lastNodeId": 531,
+          "lastLinkId": 830,
+          "lastRerouteId": 9
+        },
+        "revision": 0,
+        "config": {},
+        "name": "MOSS",
+        "inputNode": {
+          "id": -10,
+          "bounding": [
+            -521.5519303273503,
+            395.241060636682,
+            135.87890625,
+            228.00000000000006
+          ]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [
+            1659.7939189714925,
+            339.1658980285545,
+            128,
+            68
+          ]
+        },
+        "inputs": [
+          {
+            "id": "8fe111e4-1b2d-424e-b81b-fc8d167bd750",
+            "name": "text",
+            "type": "STRING",
+            "linkIds": [
+              810
+            ],
+            "localized_name": "text",
+            "pos": [
+              -409.6730240773503,
+              419.241060636682
+            ]
+          },
+          {
+            "id": "9fabac41-3b38-4984-88dc-0574f2a364f5",
+            "name": "unet_name",
+            "type": "COMBO",
+            "linkIds": [
+              808
+            ],
+            "pos": [
+              -409.6730240773503,
+              439.241060636682
+            ]
+          },
+          {
+            "id": "6837db8a-acb3-4da7-85cb-8248990a126f",
+            "name": "clip_name",
+            "type": "COMBO",
+            "linkIds": [
+              815
+            ],
+            "pos": [
+              -409.6730240773503,
+              459.241060636682
+            ]
+          },
+          {
+            "id": "6d4d242d-3a82-4447-bb0c-1c2ff75bd493",
+            "name": "lora_name",
+            "type": "COMBO",
+            "linkIds": [
+              809
+            ],
+            "pos": [
+              -409.6730240773503,
+              479.241060636682
+            ]
+          },
+          {
+            "id": "1c5697d6-933d-4667-be1d-b7fec14cb37e",
+            "name": "strength_model",
+            "type": "FLOAT",
+            "linkIds": [
+              816
+            ],
+            "pos": [
+              -409.6730240773503,
+              499.241060636682
+            ]
+          },
+          {
+            "id": "e8fe957c-6e67-475d-bf10-88db089d3195",
+            "name": "steps",
+            "type": "INT",
+            "linkIds": [
+              812
+            ],
+            "pos": [
+              -409.6730240773503,
+              519.241060636682
+            ]
+          },
+          {
+            "id": "c6adb5dc-7c11-478c-8e33-9ed11cdc894a",
+            "name": "cfg",
+            "type": "FLOAT",
+            "linkIds": [
+              813
+            ],
+            "pos": [
+              -409.6730240773503,
+              539.241060636682
+            ]
+          },
+          {
+            "id": "266c2fde-8a3e-4d10-b316-8f275fea59af",
+            "name": "width",
+            "type": "INT",
+            "linkIds": [
+              797
+            ],
+            "pos": [
+              -409.6730240773503,
+              559.241060636682
+            ]
+          },
+          {
+            "id": "93cfe8e0-9c22-41a1-b14b-af382d1fea88",
+            "name": "height",
+            "type": "INT",
+            "linkIds": [
+              798
+            ],
+            "pos": [
+              -409.6730240773503,
+              579.241060636682
+            ]
+          }
+        ],
+        "outputs": [
+          {
+            "id": "d705ff43-fb60-41f8-9268-dbe05266c9ca",
+            "name": "IMAGE",
+            "type": "IMAGE",
+            "linkIds": [
+              5
+            ],
+            "localized_name": "IMAGE",
+            "pos": [
+              1683.7939189714925,
+              363.1658980285545
+            ]
+          }
+        ],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 7,
+            "type": "EmptyFlux2LatentImage",
+            "pos": [
+              89.03788498017352,
+              637.5287147622564
+            ],
+            "size": [
+              270,
+              106
+            ],
+            "flags": {},
+            "order": 6,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "width",
+                "name": "width",
+                "type": "INT",
+                "widget": {
+                  "name": "width"
+                },
+                "link": 797
+              },
+              {
+                "localized_name": "height",
+                "name": "height",
+                "type": "INT",
+                "widget": {
+                  "name": "height"
+                },
+                "link": 798
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [
+                  10
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "EmptyFlux2LatentImage",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              1536,
+              1024,
+              1
+            ],
+            "widgets_values_named": {
+              "width": 1536,
+              "height": 1024,
+              "batch_size": 1
+            }
+          },
+          {
+            "id": 4,
+            "type": "VAELoader",
+            "pos": [
+              94.39248373918726,
+              519.1210792614656
+            ],
+            "size": [
+              270,
+              58
+            ],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "localized_name": "VAE",
+                "name": "VAE",
+                "type": "VAE",
+                "links": [
+                  12
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "VAELoader",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "flux2-vae.safetensors"
+            ],
+            "widgets_values_named": {
+              "vae_name": "flux2-vae.safetensors"
+            }
+          },
+          {
+            "id": 3,
+            "type": "CLIPLoader",
+            "pos": [
+              100,
+              342
+            ],
+            "size": [
+              270,
+              106
+            ],
+            "flags": {},
+            "order": 3,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "clip_name",
+                "name": "clip_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "clip_name"
+                },
+                "link": 815
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "CLIP",
+                "name": "CLIP",
+                "type": "CLIP",
+                "links": [
+                  2,
+                  3
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "CLIPLoader",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "qwen3.5_9b_int8_convrot.safetensors",
+              "moss_image",
+              "default"
+            ],
+            "widgets_values_named": {
+              "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+              "type": "moss_image",
+              "device": "default"
+            }
+          },
+          {
+            "id": 6,
+            "type": "CLIPTextEncode",
+            "pos": [
+              479.23562765299255,
+              481.6349257987265
+            ],
+            "size": [
+              400,
+              200
+            ],
+            "flags": {},
+            "order": 5,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "clip",
+                "name": "clip",
+                "type": "CLIP",
+                "link": 3
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "CONDITIONING",
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": [
+                  9
+                ]
+              }
+            ],
+            "title": "Negative Prompt (empty = reference default)",
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "CLIPTextEncode",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artifacts"
+            ],
+            "widgets_values_named": {
+              "text": "bad anatomy, extra limbs, fused limbs, extra fingers, fused fingers, jpeg artifacts"
+            }
+          },
+          {
+            "id": 1,
+            "type": "UNETLoader",
+            "pos": [
+              73.87382553042208,
+              -10.026963533146784
+            ],
+            "size": [
+              399.33358380066295,
+              140.4272207966806
+            ],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "unet_name",
+                "name": "unet_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "unet_name"
+                },
+                "link": 808
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "MODEL",
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": [
+                  788
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "UNETLoader",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              "moss_image_sft_int8_convrot.safetensors",
+              "default"
+            ],
+            "widgets_values_named": {
+              "unet_name": "moss_image_sft_int8_convrot.safetensors",
+              "weight_dtype": "default"
+            }
+          },
+          {
+            "id": 5,
+            "type": "CLIPTextEncode",
+            "pos": [
+              504.6686903103781,
+              154.2992371301887
+            ],
+            "size": [
+              400,
+              200
+            ],
+            "flags": {},
+            "order": 4,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "clip",
+                "name": "clip",
+                "type": "CLIP",
+                "link": 2
+              },
+              {
+                "localized_name": "text",
+                "name": "text",
+                "type": "STRING",
+                "widget": {
+                  "name": "text"
+                },
+                "link": 810
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "CONDITIONING",
+                "name": "CONDITIONING",
+                "type": "CONDITIONING",
+                "links": [
+                  8
+                ]
+              }
+            ],
+            "title": "Positive Condition",
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "CLIPTextEncode",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              ""
+            ],
+            "widgets_values_named": {
+              "text": ""
+            }
+          },
+          {
+            "id": "22_19",
+            "type": "VAEDecode",
+            "pos": [
+              1382.942979159929,
+              178.10004816099092
+            ],
+            "size": [
+              157.81666946411133,
+              46
+            ],
+            "flags": {},
+            "order": 8,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "samples",
+                "name": "samples",
+                "type": "LATENT",
+                "link": 11
+              },
+              {
+                "localized_name": "vae",
+                "name": "vae",
+                "type": "VAE",
+                "link": 12
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "IMAGE",
+                "name": "IMAGE",
+                "type": "IMAGE",
+                "links": [
+                  5
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "VAEDecode",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            }
+          },
+          {
+            "id": "22_17",
+            "type": "KSampler",
+            "pos": [
+              993.453657788753,
+              197.29019512975313
+            ],
+            "size": [
+              307.27272727272725,
+              292.0000110973011
+            ],
+            "flags": {},
+            "order": 9,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 789
+              },
+              {
+                "localized_name": "positive",
+                "name": "positive",
+                "type": "CONDITIONING",
+                "link": 8
+              },
+              {
+                "localized_name": "negative",
+                "name": "negative",
+                "type": "CONDITIONING",
+                "link": 9
+              },
+              {
+                "localized_name": "latent_image",
+                "name": "latent_image",
+                "type": "LATENT",
+                "link": 10
+              },
+              {
+                "localized_name": "seed",
+                "name": "seed",
+                "type": "INT",
+                "widget": {
+                  "name": "seed"
+                },
+                "link": 787
+              },
+              {
+                "localized_name": "steps",
+                "name": "steps",
+                "type": "INT",
+                "widget": {
+                  "name": "steps"
+                },
+                "link": 812
+              },
+              {
+                "localized_name": "cfg",
+                "name": "cfg",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "cfg"
+                },
+                "link": 813
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "LATENT",
+                "name": "LATENT",
+                "type": "LATENT",
+                "links": [
+                  11
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "KSampler",
+              "ue_properties": {
+                "widget_ue_connectable": {},
+                "input_ue_unconnectable": {},
+                "version": "7.8"
+              }
+            },
+            "widgets_values": [
+              11499,
+              "increment",
+              12,
+              2.5,
+              "er_sde",
+              "simple",
+              1
+            ],
+            "widgets_values_named": {
+              "seed": 11499,
+              "control_after_generate": "increment",
+              "steps": 12,
+              "cfg": 2.5,
+              "sampler_name": "er_sde",
+              "scheduler": "simple",
+              "denoise": 1
+            }
+          },
+          {
+            "id": 518,
+            "type": "SeedNode",
+            "pos": [
+              100.19272829017088,
+              193.47986001128692
+            ],
+            "size": [
+              270,
+              82
+            ],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "localized_name": "seed",
+                "name": "seed",
+                "type": "INT",
+                "links": [
+                  787
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "SeedNode"
+            },
+            "widgets_values": [
+              363665988952089,
+              "randomize"
+            ],
+            "widgets_values_named": {
+              "seed": 363665988952089,
+              "control_after_generate": "randomize"
+            }
+          },
+          {
+            "id": 519,
+            "type": "LoraLoaderModelOnly",
+            "pos": [
+              566.7157081314601,
+              11.10447924239789
+            ],
+            "size": [
+              418.003772610648,
+              90.95488044877573
+            ],
+            "flags": {},
+            "order": 7,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "model",
+                "name": "model",
+                "type": "MODEL",
+                "link": 788
+              },
+              {
+                "localized_name": "lora_name",
+                "name": "lora_name",
+                "type": "COMBO",
+                "widget": {
+                  "name": "lora_name"
+                },
+                "link": 809
+              },
+              {
+                "localized_name": "strength_model",
+                "name": "strength_model",
+                "type": "FLOAT",
+                "widget": {
+                  "name": "strength_model"
+                },
+                "link": 816
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "MODEL",
+                "name": "MODEL",
+                "type": "MODEL",
+                "links": [
+                  789
+                ]
+              }
+            ],
+            "properties": {
+              "cnr_id": "comfy-core",
+              "ver": "0.42.0",
+              "Node name for S&R": "LoraLoaderModelOnly"
+            },
+            "widgets_values": [
+              "Moss\\lora_dmd2.safetensors",
+              0.8
+            ],
+            "widgets_values_named": {
+              "lora_name": "Moss\\lora_dmd2.safetensors",
+              "strength_model": 0.8
+            }
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 3,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": 6,
+            "target_slot": 0,
+            "type": "CLIP"
+          },
+          {
+            "id": 2,
+            "origin_id": 3,
+            "origin_slot": 0,
+            "target_id": 5,
+            "target_slot": 0,
+            "type": "CLIP"
+          },
+          {
+            "id": 11,
+            "origin_id": "22_17",
+            "origin_slot": 0,
+            "target_id": "22_19",
+            "target_slot": 0,
+            "type": "LATENT"
+          },
+          {
+            "id": 12,
+            "origin_id": 4,
+            "origin_slot": 0,
+            "target_id": "22_19",
+            "target_slot": 1,
+            "type": "VAE"
+          },
+          {
+            "id": 8,
+            "origin_id": 5,
+            "origin_slot": 0,
+            "target_id": "22_17",
+            "target_slot": 1,
+            "type": "CONDITIONING"
+          },
+          {
+            "id": 9,
+            "origin_id": 6,
+            "origin_slot": 0,
+            "target_id": "22_17",
+            "target_slot": 2,
+            "type": "CONDITIONING"
+          },
+          {
+            "id": 10,
+            "origin_id": 7,
+            "origin_slot": 0,
+            "target_id": "22_17",
+            "target_slot": 3,
+            "type": "LATENT"
+          },
+          {
+            "id": 5,
+            "origin_id": "22_19",
+            "origin_slot": 0,
+            "target_id": -20,
+            "target_slot": 0,
+            "type": "IMAGE"
+          },
+          {
+            "id": 787,
+            "origin_id": 518,
+            "origin_slot": 0,
+            "target_id": "22_17",
+            "target_slot": 4,
+            "type": "INT"
+          },
+          {
+            "id": 788,
+            "origin_id": 1,
+            "origin_slot": 0,
+            "target_id": 519,
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 789,
+            "origin_id": 519,
+            "origin_slot": 0,
+            "target_id": "22_17",
+            "target_slot": 0,
+            "type": "MODEL"
+          },
+          {
+            "id": 810,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 5,
+            "target_slot": 1,
+            "type": "STRING"
+          },
+          {
+            "id": 808,
+            "origin_id": -10,
+            "origin_slot": 1,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "COMBO"
+          },
+          {
+            "id": 815,
+            "origin_id": -10,
+            "origin_slot": 2,
+            "target_id": 3,
+            "target_slot": 0,
+            "type": "COMBO"
+          },
+          {
+            "id": 809,
+            "origin_id": -10,
+            "origin_slot": 3,
+            "target_id": 519,
+            "target_slot": 1,
+            "type": "COMBO"
+          },
+          {
+            "id": 816,
+            "origin_id": -10,
+            "origin_slot": 4,
+            "target_id": 519,
+            "target_slot": 2,
+            "type": "FLOAT"
+          },
+          {
+            "id": 812,
+            "origin_id": -10,
+            "origin_slot": 5,
+            "target_id": "22_17",
+            "target_slot": 5,
+            "type": "INT"
+          },
+          {
+            "id": 813,
+            "origin_id": -10,
+            "origin_slot": 6,
+            "target_id": "22_17",
+            "target_slot": 6,
+            "type": "FLOAT"
+          },
+          {
+            "id": 797,
+            "origin_id": -10,
+            "origin_slot": 7,
+            "target_id": 7,
+            "target_slot": 0,
+            "type": "INT"
+          },
+          {
+            "id": 798,
+            "origin_id": -10,
+            "origin_slot": 8,
+            "target_id": 7,
+            "target_slot": 1,
+            "type": "INT"
+          }
+        ],
+        "extra": {
+          "pixaromaGroups": []
+        }
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9556203940458919,
+      "offset": [
+        613.4226676770904,
+        -339.46756440627234
+      ]
+    },
+    "frontendVersion": "1.57.6",
+    "ue_links": [],
+    "links_added_by_ue": [],
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": false,
+    "VHS_KeepIntermediate": true
+  },
+  "extensions": {
+    "seed_widgets": {
+      "521": 7
+    }
+  },
+  "version": 0.4,
+  "seed_widgets": {
+    "528": 12
+  }
+}
