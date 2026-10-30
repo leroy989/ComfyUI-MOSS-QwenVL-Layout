@@ -127,6 +127,24 @@ Qwen is asked for detailed captions that state spatial relationships and occlusi
 
 MOSS layouts use absolute pixel boxes ordered `[y_min, x_min, y_max, x_max]`, with the canvas **center** as the origin. Qwen3-VL returns `[x1, y1, x2, y2]` on a 0–1000 grid. The node scales to your canvas size, subtracts `W/2` and `H/2`, and reorders the values. Because the 0–1000 grid is size-independent, the layout still maps correctly if you force a canvas with a different aspect ratio from the scaled image (the layout is stretched to fit).
 
+## Also included: Krea 2 / MOSS Image Prompt Builder
+
+A second, independent node in this pack (**Add Node → text/prompt → Krea 2 / MOSS Image Prompt Builder**). It turns a rough idea into a full prompt in the format Krea 2 or MOSS Image expects. It needs no extra pip packages: it uses the LLM text encoder (CLIP) you already loaded in ComfyUI, such as Qwen3.5, Qwen3-VL or Gemma, loaded with *Load CLIP*. Image mode needs a vision-capable one, and you need a recent ComfyUI with the core **Generate Text** node.
+
+| Mode | How | Result |
+|---|---|---|
+| Text | type a basic idea | full prompt in the target format |
+| Image | `use_image` ON + connect `image` | prompt describing the image (typed text = extra direction) |
+| Wildcard | `use_wildcard` ON + list ingredients | a new invented scene built from them |
+
+**Style override** (single-line box): if filled, every mode writes the prompt in that style, e.g. `watercolor illustration`. In image mode the image's own style is ignored; only its content is kept.
+
+`wildcard_pick` = 0 uses every ingredient; N randomly picks N per run. Empty list = fully random scene. If image and wildcard are both on, image wins.
+
+Outputs: `prompt` and `negative_prompt` (MOSS: the official recommended negative tags; Krea: empty).
+
+Prompt rules were written from the Krea 2 docs (https://github.com/krea-ai/krea-2) and the MOSS Image user guide (https://github.com/OpenMOSS/MOSS-Image).
+
 ## Credits and licenses
 
 This repo contains no model weights. Please read the license terms of the models you use:
